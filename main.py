@@ -1,13 +1,8 @@
 import csv
 
-from HashTable import HashTable
-import Package
+from Package import Package
 
 print('WGU Delivery APP')
 
-
-def initialize_data():
-    Package.initialize_package_data()
-
-
-initialize_data()
+pkg = Package('./resource/WGUPS Package File.csv')
+print(pkg.packages)
