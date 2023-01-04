@@ -1,27 +1,24 @@
 import csv
 
+import HashTable
+
 
 class Package:
-    # def __init__(self, package_id, delivery_address, delivery_deadline, delivery_city, delivery_zip_code,
-    #              delivery_weight, delivery_status=False):
-    #     self.package_id_number = package_id
-    #     self.delivery_address = delivery_address
-    #     self.delivery_deadline = delivery_deadline
-    #     self.delivery_city = delivery_city
-    #     self.delivery_zip_code = delivery_zip_code
-    #     self.weight = delivery_weight
-    #     self.status = delivery_status
 
-    def __init__(self, csv_file):
-        self.packages = {}
+    def __init__(self, pkg_id, address, city, state, zip_code, deadline, weight, special_note, start_time="",
+                 delivery_time="", delivery_status=False):
+        self.pid = pkg_id
+        self.address = address
+        self.city = city
+        self.state = state
+        self.zip_code = zip_code
+        self.deadline = deadline
+        self.weight = weight
+        self.special_note = special_note
+        self.start_time = start_time
+        self.delivery_time = delivery_time
+        self.status = delivery_status
 
-        # read data from the csv file
-        with open(csv_file, "r") as f:
-            package_data = csv.DictReader(f)
-            # next(package_data)
-            for row in package_data:
-                # Add the package data to the hash table
-                self.packages[row['Package ID']] = [row['Address'], row['City'], row['State'], row['ZipCode'],
-                                                    row['Deadline'], row['Weight'], row['Special Notes']]
-
-
+    # for testing
+    def __str__(self):
+        return f"{self.ID} {self.address} {self.city} {self.state} {self.zip} {self.deadline} {self.mass} {self.notes} {self.status} {self.time}"

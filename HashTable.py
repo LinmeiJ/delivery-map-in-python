@@ -1,34 +1,49 @@
 # The implementation is referenced from 'Hash Table class using Chaining' in ZyBook Chapter 9'
-class HashTable:
-
+class ChainingHashTable:
+    # Constructor with optional initial capacity parameter.
+    # Assigns all buckets with an empty list.
     def __init__(self, initial_capacity=10):
+        # initialize the hash table with empty bucket list entries.
         self.table = []
         for i in range(initial_capacity):
             self.table.append([])
 
-    def addData(self, key, value):
+    # Inserts a new pair into the hash table.
+    def insert(self, key, value):
+        # get the bucket list where this item will go.
+        bucket = hash(key) % len(self.table)
+        bucket_list = self.table[bucket]
+        # return true when the pair is already exits
+        for kv in bucket_list:
+            if kv[0] == key:
+                kv[1] = value
+                return True
+        # insert the pair into table when it doesn't exit
+        pair = [key, value]
+        bucket_list.append(pair)
+        return True
+
+    # Searches for an item with matching key in the hash table.
+    # Returns the item if found, or None if not found.
+    def search(self, key):
+        # get the bucket number
         bucket = hash(key) % len(self.table)
         bucket_list = self.table[bucket]
 
-        if self.searchKey(key) == key:
-            self.table[key] = value
+        # search for the key in the bucket list
+        for kv in bucket_list:
+            # find the key and return its value
+            if kv[0] == key:
+                return kv[1]
+        return None  # None means not found
 
-        else:
-            dic = [key, value]
-            bucket_list.append(dic)
-
-    def searchKey(self, key):
-        bucket = hash(key) % len(self.table)
-        bucket_list = self.table[bucket]
-
-        if key in bucket_list:
-            item_index = bucket_list.index(key)
-            return bucket_list[item_index]
-        else:
-            return None
-
+    # Removes an item with matching key from the hash table.
     def remove(self, key):
+        # get the bucket list where this item will be removed from.
         bucket = hash(key) % len(self.table)
         bucket_list = self.table[bucket]
-        if key in bucket_list:
-            bucket_list.remove(key)
+
+        # remove the item from the bucket list if it is present.
+        for kv in bucket_list:
+            if (kv[0]) == key:
+                bucket_list.remove(key[0], key[1])
