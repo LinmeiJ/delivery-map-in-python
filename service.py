@@ -18,65 +18,8 @@ class Services:
 
         g = Graph.Graph('./resource/WGUPS Distance Table.csv', self.edges)
         # print(g.edges)
-        # print(g.edges.values())
+        print(g.edges.values())
 
-# load package data from a csv file
-# def load_package_data(csv_file, hashTable):
-#     # read data from the WGUPS Package csv file
-#     with open(csv_file, "r") as pkgs:
-#         package_data = csv.reader(pkgs, delimiter=',')
-#
-#         # Skip the header
-#         next(package_data)
-#         for row in package_data:
-#             # Add the package data to the hash table
-#             hashTable.insert(int(row[0]),
-#                              Package(int(row[0]), row[1], row[2], row[3], row[4], row[5], row[6],
-#                                      row[7]))
-
-# # Open the distance data file
-# def load_distance_data(csv_file, graphList):
-#     with open(csv_file, 'r') as file:
-#         # Create a CSV reader object
-#         reader = csv.reader(file)
-#
-#         # Initialize an empty list to store the data
-#         data = []
-#
-#         # Iterate over the rows of the CSV file
-#         for row in reader:
-#             data.append(row)
-#
-#         # for i in data:
-#         #     print(i)
-#
-#         # Initialize an empty graph
-#     graph = {}
-#
-#     # Iterate over the rows of the data
-#     for row in data:
-#         # Get the source and destination nodes and the distance
-#         src = row[0]
-#         print(src)
-#         dest = row[1]
-#         distance = row[3]
-#         print(f"{dest} EEEEEND  {distance}")
-#
-#         # Add the edge to the graph
-#         if src not in graph:
-#             graph[src] = [(dest, distance)]
-#         else:
-#             graph[src].append((dest, distance))
-
-# ### continue to store more edges
-#
-# # Add the edge to the graph
-# if src not in graph:
-#     graph[src] = [(dest, distance)]
-# else:
-#     graph[src].append((dest, distance))
-#
-#
 # def dijkstra(graph, src, dest):
 #     # Initialize a priority queue to store the distances and nodes
 #     queue = []
