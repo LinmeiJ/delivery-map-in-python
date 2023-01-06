@@ -1,6 +1,6 @@
 
 from Package import Package
-import distance
+import graph
 
 
 class LoadData:
@@ -11,7 +11,7 @@ class LoadData:
         pkg.load_package_data('./resource/WGUPS Package File.csv', packageTable)
 
         # maps all the addresses and edges with giving data
-        distance.Distance('./resource/WGUPS Distance Table.csv', edges)
+        graph.Graph('./resource/WGUPS Distance Table.csv', edges)
 
 
 

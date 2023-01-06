@@ -4,6 +4,8 @@ import service
 import HashTable
 
 # Initialize an empty hashtable to store packages
+from graph import Graph
+
 packageTable = HashTable.ChainingHashTable()
 # Initialize an empty dictionary to store the vertexes and edges of the graph
 graph = {}
@@ -64,20 +66,20 @@ def tsp_shortest_path(truck, start):
         # Find the nearest undelivered_pkg location to the current location
         nearest_location = None
         nearest_distance = float('inf')
-        for location in undelivered_pkg:
-            dist = graph(current_location, location)
-            if dist < nearest_distance:
-                nearest_location = location
-                nearest_distance = dist
+        # for location in undelivered_pkg:
+        #     dist = distance(current_location, location)
+        #     if dist < nearest_distance:
+            #     nearest_location = location
+            #     nearest_distance = dist
 
         # Add the nearest location to the route
-        route.append(nearest_location)
+        # route.append(nearest_location)
 
         # Remove the nearest location from the list of undelivered_pkg locations
-        undelivered_pkg.remove(nearest_location)
+        # undelivered_pkg.remove(nearest_location)
 
         # Set the current location to the nearest location
-        current_location = nearest_location
+        # current_location = nearest_location
 
     # Return the final route
     return ""

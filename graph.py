@@ -1,7 +1,7 @@
 import csv
 
 
-class Distance:
+class Graph:
     def __init__(self, csv_file, adjacency_list):
         self.edges = adjacency_list
 
@@ -26,28 +26,3 @@ class Distance:
                             self.edges[vertex] = [(destNode, distance)]
                         else:
                             self.edges[vertex].append((destNode, distance))
-
-
-    # def dijkstra_shortest_path(graph, src, dest):
-    #     # Initialize a priority queue to store the distances and nodes
-    #     queue = []
-    #     # Push the source node into the queue with a distance of 0
-    #     heapq.heappush(queue, (0, src))
-    #     # Initialize a dictionary to store the distances from the source node
-    #     distances = {}
-    #     # Set the distance of the source node to 0
-    #     distances[src] = 0
-    #     # Initialize a dictionary to store the predecessor nodes
-    #     predecessors = {}
-    #
-    #     # Repeat the following until the queue is empty
-    #     while queue:
-    #         # Pop the node with the smallest distance from the queue
-    #         distance, node = heapq.heappop(queue)
-    #         # If the node is the destination, return the distances and predecessors
-    #         if node == dest:
-    #             return distances, predecessors
-    #         # Iterate over the neighbors of the node
-    #         for neighbor, edge_distance in graph[node]:
-    #             # Calculate the total distance to the neighbor
-    #             total_distance = distance + edge_distance
