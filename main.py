@@ -4,8 +4,6 @@ import service
 import HashTable
 
 # Initialize an empty hashtable to store packages
-from graph import Graph
-
 packageTable = HashTable.ChainingHashTable()
 # Initialize an empty dictionary to store the vertexes and edges of the graph
 graph = {}
