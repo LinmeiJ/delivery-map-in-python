@@ -1,5 +1,3 @@
-import heapq
-
 import service
 import HashTable
 
@@ -34,6 +32,12 @@ def load_cargo():
 load_cargo()
 
 
+# find the distance between 2 locations
+def calc_distance(route1, route2):
+    graph_dict = dict(graph.get(route1))
+    return graph_dict.get(route2)
+
+
 def tsp_shortest_path(truck, start):
     # Create a list of the locations that have not been visited yet
     undelivered_pkg = truck.copy()
@@ -41,10 +45,7 @@ def tsp_shortest_path(truck, start):
     # find the package that is already at the start location:  O(N)
     for i, pkg in enumerate(undelivered_pkg):
         pkg_id = pkg[0]
-        pkg_address = vars(pkg[1]).get("address") + "" \
-                      + vars(pkg[1]).get("city") + "" \
-                      + vars(pkg[1]).get("state") + "" \
-                      + vars(pkg[1]).get("zip_code")
+        pkg_address = vars(pkg[1]).get("address") + " " + vars(pkg[1]).get("zip_code")
         # unload the packages that are for current starting location and mark the status as delivered
         if start == pkg_address:
             packageTable.update_pkg_delivery_status(pkg_id, 'delivered')
@@ -52,40 +53,45 @@ def tsp_shortest_path(truck, start):
 
     # Set the current location to the starting location
     current_location = start
-
     # Initialize an empty route
-    route = []
+    route = [current_location]
 
-    # Add the starting location to the route
-    route.append(start)
+    locations = []
+    # get a list of just address of all packages
+    for pkg in truck:
+        locations.append(vars(pkg[1]).get("address") + " " + vars(pkg[1]).get("zip_code"))
 
+    print(locations)
+    print('+++')
     # Keep looping until all locations have been visited
-    while undelivered_pkg:
-        # Find the nearest undelivered_pkg location to the current location
+    while locations:
+        # Find the nearest unvisited location to the current location
         nearest_location = None
         nearest_distance = float('inf')
-        # for location in undelivered_pkg:
-        #     dist = distance(current_location, location)
-        #     if dist < nearest_distance:
-            #     nearest_location = location
-            #     nearest_distance = dist
+        for location in locations:
+            location_distance = calc_distance(current_location, location)
+            if location_distance != '':
+                dist = float(location_distance)
+            if dist < nearest_distance:
+                nearest_location = location
+                nearest_distance = dist
 
         # Add the nearest location to the route
-        # route.append(nearest_location)
+        route.append(nearest_location)
 
-        # Remove the nearest location from the list of undelivered_pkg locations
-        # undelivered_pkg.remove(nearest_location)
+        # Remove the nearest location from the list of unvisited locations
+        locations.remove(nearest_location)
 
         # Set the current location to the nearest location
-        # current_location = nearest_location
+        current_location = nearest_location
 
     # Return the final route
-    return ""
+    return route
 
 
-start_location = "4001 South 700 East Salt Lake City UT 84107"
-shortest_route_for_truck1 = tsp_shortest_path(truck1, start_location)
-
+start_location = "4001 South 700 East 84107"
+print(tsp_shortest_path(truck1, start_location))
+# shortest_route_for_truck1 = tsp_shortest_path(truck1, start_location)
 
 # print('======== WGUPS Routing Program =======')
 # ans = True
