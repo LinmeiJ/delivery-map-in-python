@@ -1,11 +1,8 @@
 import service
 import HashTable
 
-
-# Initialize an empty hashtable to store packages
 # Initialize an empty hashtable to store packages and empty dictionary to store addresses and distances
 packageTable = HashTable.ChainingHashTable()
-# Initialize an empty dictionary to store the vertexes and edges of the graph
 graph = {}
 
 # set hub location
@@ -13,7 +10,6 @@ start_location = '4001 South 700 East 84107'
 
 # Load data from csv files
 service.LoadData(packageTable, graph)
-# print(packageTable.table)
 
 # Initialize three empty trucks
 truck1 = []
@@ -25,50 +21,23 @@ package_info_list = []
 package_address_list = []
 package_urgent_list = []
 
-# Split packages and load into trucks. Each truck can carry a max of 16 packages
-def load_cargo():
-    for bucket in packageTable.table:
-        for index, pkg in enumerate(bucket):
-            if len(truck1) < 16:
-                truck1.append(pkg)
-            elif len(truck2) < 16:
-                truck2.append(pkg)
-            else:
-                truck3.append(pkg)
 
 def get_list_of_address():
     for pkgs in packageTable.table:
         for pkg in pkgs:
             package_address_list.append(vars(pkg[1]).get('address') + ' ' + vars(pkg[1]).get('zip_code'))
 
-# load package into each truck
-load_cargo()
 
 def get_list_of_pkg_info():
     for pkgs in packageTable.table:
         for pkg in pkgs:
             package_info_list.append(vars(pkg[1]))
 
-# find the distance between 2 locations
-def calc_distance(route1, route2):
-    graph_dict = dict(graph.get(route1))
-    return graph_dict.get(route2)
 
 get_list_of_address()
 get_list_of_pkg_info()
 
-def tsp_shortest_path(truck, start):
-    # Create a list of the locations that have not been visited yet
-    undelivered_pkg = truck.copy()
 
-    # find the package that is already at the start location:  O(N)
-    for i, pkg in enumerate(undelivered_pkg):
-        pkg_id = pkg[0]
-        pkg_address = vars(pkg[1]).get("address") + " " + vars(pkg[1]).get("zip_code")
-        # unload the packages that are for current starting location and mark the status as delivered
-        if start == pkg_address:
-            packageTable.update_pkg_delivery_status(pkg_id, 'delivered')
-            undelivered_pkg.remove(pkg)
 # print(package_address_list)
 
 
@@ -84,20 +53,15 @@ def calc_distance(route1, route2):
 def get_address_from_package_list(truck, start):
     # Set the current location to the starting location
     current_location = start
-    # Initialize an empty route
-    route = [current_location]
 
     locations = []
     # get a list of just address of all packages
     for pkg in truck:
-        locations.append(vars(pkg[1]).get("address") + " " + vars(pkg[1]).get("zip_code"))
         locations.append(pkg.get('address') + ' ' + pkg.get('zip_code'))
 
     return find_fastest_route(current_location, locations)
 
 
-    print(locations)
-    print('+++')
 # TSP algorithm
 def find_fastest_route(current_location, locations):
     # Initialize an empty route
@@ -105,11 +69,10 @@ def find_fastest_route(current_location, locations):
     # Keep looping until all locations have been visited
     while locations:
         # Find the nearest unvisited location to the current location
-@ -70,28 +73,82 @@ def tsp_shortest_path(truck, start):
+        nearest_location = None
         nearest_distance = float('inf')
         for location in locations:
             location_distance = calc_distance(current_location, location)
-            if location_distance != '':
             if location_distance != '' and location_distance is not None:
                 dist = float(location_distance)
                 if dist < nearest_distance:
@@ -119,21 +82,18 @@ def find_fastest_route(current_location, locations):
         if nearest_location is not None:
             # Add the nearest location to the route
             route.append(nearest_location)
-
             # Remove the nearest location from the list of unvisited locations
             locations.remove(nearest_location)
 
         # Set the current location to the nearest location
         current_location = nearest_location
-
     # Return the final route
     return route
 
 
-start_location = "4001 South 700 East 84107"
-print(tsp_shortest_path(truck1, start_location))
-# shortest_route_for_truck1 = tsp_shortest_path(truck1, start_location)
 route_plan_for_all_pkg = find_fastest_route(start_location, package_address_list)
+
+
 # print(route_plan_for_all_pkg)
 
 
@@ -191,7 +151,6 @@ load_cargo()
 # print(tsp_shortest_path(truck1, start_location))
 shortest_path = get_address_from_package_list(truck1, start_location)
 print(shortest_path)
-
 
 # print('======== WGUPS Routing Program =======')
 # ans = True
