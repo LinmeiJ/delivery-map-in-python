@@ -28,3 +28,20 @@ class Graph:
                         else:
                             self.edges[vertex].append((dest_node, distance))
 
+        # Driver can drive to location B from A, also can drive from A to B. The following is to add missing
+        # distance data from B to A, for instance, as the csv only proves distance from A to B
+        start = '4001 South 700 East 84107'
+        for k, v in self.edges.items():
+            if k == start:
+                pass
+            else:
+                for dest in v:
+                    if dest[1] == '':
+                        edge_list = self.edges.get(dest[0])
+                        for address in edge_list:
+                            if address[0] == k:
+                                dest[1] = address[1]
+                                break  # once find the distance, break the loop
+                    else:
+                        break  # only access missing data destination, skip the ones already have distance
+                        # assigned to it
