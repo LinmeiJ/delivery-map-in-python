@@ -24,9 +24,9 @@ class Graph:
                         # Add the edge to the dictionary: key is the starting address, value is a dictionary of
                         # destination addresses and distances from the starting address
                         if vertex not in self.edges:
-                            self.edges[vertex] = [(dest_node, distance)]
+                            self.edges[vertex] = [[dest_node, distance]]
                         else:
-                            self.edges[vertex].append((dest_node, distance))
+                            self.edges[vertex].append([dest_node, distance])
 
         # Driver can drive to location B from A, also can drive from A to B. The following is to add missing
         # distance data from B to A, for instance, as the csv only proves distance from A to B
