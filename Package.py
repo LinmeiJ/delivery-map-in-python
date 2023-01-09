@@ -8,19 +8,20 @@ import HashTable
 # 3) pkg 6: 10:30AM but pkg won't arrive to depot until 9:05AM
 
 class Package:
-
     package_table = HashTable.ChainingHashTable()
 
+    # urgent means the deadline has a specific time except EOD
     all_package_info_list = []
-    all_package_address_list = []
     package_urgent_list = []
-    package_urgent_list_address_only = []
-    package_flight_delayed_list = []
+    package_not_urgent_delayed_list = []
+    package_urgent_delayed_list = []
     package_remaining_packages = []
     package_with_wrong_address = []
+    package_with_truck2_only = []
+    package_must_on_same_truck = []
 
-    def __init__(self, pkg_id, address, city, state, zip_code, deadline, weight, special_note, start_time="",
-                 delivery_time="", delivery_status='At The Hub'):
+    def __init__(self, pkg_id, address, city, state, zip_code, deadline, weight, special_note, s_time="",
+                 d_time="", delivery_status='At The Hub'):
         self.pid = int(pkg_id)
         self.address = address
         self.city = city
@@ -29,8 +30,8 @@ class Package:
         self.deadline = deadline
         self.weight = weight
         self.special_note = special_note
-        self._start_time = start_time
-        self.delivery_time = delivery_time
+        self._start_time = s_time
+        self.delivery_time = d_time
         self.status = delivery_status
 
     # load package data from a csv file and category them
@@ -50,22 +51,36 @@ class Package:
         self.category_packages()
 
     def category_packages(self):
+        delay_msg = 'Delayed on flight---will not arrive to depot until 9:05 am'
+        wrong_address = 'Wrong address listed'
+        only_truck2 = 'Can only be on truck 2'
+
         for pkgs in self.package_table.table:
             for pkg in pkgs:
-                self.all_package_address_list.append(vars(pkg[1]).get('address') + ' ' + vars(pkg[1]).get('zip_code'))
+                print(pkg)
                 self.all_package_info_list.append(vars(pkg[1]))
-                # urgent delivery packages
-                if vars(pkg[1]).get('deadline') != 'EOD':
-                    self.package_urgent_list_address_only.append(vars(pkg[1]).get('address') + ' ' + vars(pkg[1]).get('zip_code'))
+                must_on_same_truck_pkg = [13, 14, 15, 16, 19, 20]
+
+                # Urgent delivery packages that already in the Hub, but not included the ones that has to be in the same truck
+                if vars(pkg[1]).get('deadline') != 'EOD' and vars(pkg[1]).get('special_note') == '' and must_on_same_truck_pkg.count(vars(pkg[1]).get('pid')) < 1:   # total of 7 out of 40
                     self.package_urgent_list.append(pkg)
-                # packages with special notes
-                elif vars(pkg[1]).get('special_note') == 'Delayed on flight---will not arrive to depot until 9:05 am':
-                    self.package_flight_delayed_list.append(pkg)
-                elif vars(pkg[1]).get('special_note') == 'package_with_wrong_address':
+                # Urgent delivery packages that has not yet arrive
+                elif vars(pkg[1]).get('deadline') != 'EOD' and vars(pkg[1]).get('special_note') == delay_msg:  # total of 2 out of 40
+                    self.package_urgent_delayed_list.append(pkg)
+                # packages that delayed but not require urgent delivery
+                elif vars(pkg[1]).get('special_note') == delay_msg and vars(pkg[1]).get('deadline') == 'EOD':  # total of 2 out of 40
+                    self.package_not_urgent_delayed_list.append(pkg)
+                # packages that has to be with truck2
+                elif vars(pkg[1]).get('special_note') == only_truck2:  # total of 4 out of 40
+                    self.package_with_truck2_only.append(pkg)
+                # packages with wrong address
+                elif vars(pkg[1]).get('special_note') == wrong_address:  # total of 1 out of 40
                     self.package_with_wrong_address.append(pkg)
-                # all remaining packages
-                else:
-                    self.package_remaining_packages.append(pkg)
+                # packages that must load together
+                elif must_on_same_truck_pkg.count(vars(pkg[1]).get('pid')) > 0:  # total of 6 out of 40
+                    self.package_must_on_same_truck.append(pkg)
+                else:  # all remaining packages
+                    self.package_remaining_packages.append(pkg)  # total of 15 of 40
 
     @property
     def start_time(self):
