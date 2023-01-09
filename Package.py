@@ -1,130 +1,115 @@
-import csv
+from Package import Package
+from graph import Graph
+from truck import Truck
 
-import HashTable
+# Load packages from a csv file
+pkgs = Package(0, '', '', '', '', '', '', '', '', '', False)  # Create an instance of Package
+pkgs.load_package_data()
+# Load graph data from a csv file
+graph = Graph()
+
+# set hub location with a package placeholder
+start_location = vars(Package(0, '4001 South 700 East', '', '', '84107', '', '', '', '', '', 'delivered'))
 
 
-# Deadline cases: 1) pkg 1, 13, 14, 16, 20, 29, 30, 31, 34, 37, 40: 10:30AM
-# 2) pkg 15: 9:00AM
-# 3) pkg 6: 10:30AM but pkg won't arrive to depot until 9:05AM
-# special notes: 1) package 3 & 18 & 36 & 38: Can 0nly be on truck 2 and deadline is EOD
-#    2) package 6 & 25 & 28 & 32: Delayed on flight -> will not arrive to depot until 9:05 am but pkg 6 & 25 also require to be delivered before 10:30AM (urgent)
-#    3) package 9: Wrong address listed
-#    4) package 14: Must be delivered with 15, 19,
-#    5) package 16: Must be delivered with 13, 19
-#    6) package 20: Must be delivered with 13, 15
-#       (^package 14, 13, 15, 16, 19, 20 must be at the same truck^)
+def calc_distance(route1, route2):
+    for kv in graph.address_with_distance.items():
+        if kv[0] == route2:
+            for elem in kv[1]:
+                if elem[0] == route1:
+                    return elem[1]
 
-class Package:
-    package_table = HashTable.ChainingHashTable()
 
-    # urgent means the deadline has a specific time except EOD
-    all_package_info_list = []
-    package_urgent_list = []
-    package_urgent_delayed_list = []
-    package_not_urgent_delayed_list = []
-    package_with_wrong_address = []
-    package_with_truck2_only = []
-    package_must_on_same_truck = []
-    package_remaining_packages = []
+# TSP algorithm for planning a route for a fast delivery
+def find_fastest_route(sta_location, loaded_truck, sta_time):
+    # Initialize a route and assign current location to it
+    route = []
+    priority_pkgs = []
+    current_time = start_time
+    for pkg in loaded_truck:
+        if pkg.get('deadline') != 'EOD':
+            priority_pkgs.append(pkg)
+    # Plan a route for priority packages first
+    add_nearest_locations_to_route(priority_pkgs, route, sta_location, current_time)
+    # plan the route based on existing priory route
+    add_nearest_locations_to_route(loaded_truck, route, sta_location, current_time)
 
-    def __init__(self, pkg_id, address, city, state, zip_code, deadline, weight, special_note, s_time="",
-                 d_time="", delivery_status='At The Hub'):
-        self.pid = int(pkg_id)
-        self.address = address
-        self.city = city
-        self.state = state
-        self.zip_code = zip_code
-        self.deadline = deadline
-        self.weight = weight
-        self.special_note = special_note
-        self._start_time = s_time
-        self.delivery_time = d_time
-        self.status = delivery_status
+    # Return the final route
+    return route
 
-    # load package data from a csv file and category them
-    def load_package_data(self):
-        # read data from the WGUPS Package csv file
-        with open('./resource/WGUPS Package File.csv', "r") as pkgs:
-            package_data = csv.reader(pkgs, delimiter=',')
 
-            # Skip the header
-            next(package_data)
+def add_nearest_locations_to_route(loaded_truck, route, sta_location, sta_time):
+    # Keep looping until all locations have been visited
+    route.append(start_location)
+    while loaded_truck:
+        # Find the nearest unvisited location to the current location
+        nearest_location = None
+        nearest_distance = float('inf')
+        for pkg in route:
+            current_location = pkg.get('address') + ' ' + pkg.get('zip_code')
 
-            for row in package_data:
-                # Create a new Package object and add it to the hash table
-                pkg = Package(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7])
+        for pkg in loaded_truck:
+            if route.count(pkg) > 0:
+                continue
+            else:
+                address = pkg.get('address') + ' ' + pkg.get('zip_code')
+                location_distance = calc_distance(current_location, address)
+                if location_distance != '' and location_distance is not None:
+                    dist = float(location_distance)
+                    if dist < nearest_distance:
+                        nearest_location = pkg
+                        nearest_distance = dist
+        if nearest_location is not None:
+            # calc_delivery_time_by_distance(route, nearest_distance, start_time)  # fix me -->  need to calculate start time, end time and delivery status,
+            # Add the nearest location to the route
+            route.append(nearest_location)
+            # Remove the nearest location from the list of unvisited locations
+            loaded_truck.remove(
+                nearest_location)
+        # Set the current location to the nearest location
+        current_location = nearest_location
 
-                self.package_table.insert(pkg.pid, pkg)
-        self.category_packages()
 
-    def category_packages(self):
-        delay_msg = 'Delayed on flight---will not arrive to depot until 9:05 am'
-        wrong_address = 'Wrong address listed'
-        only_truck2 = 'Can only be on truck 2'
+# fast_route_plan_for_all_packages = find_fastest_route(start_location, pkgs.all_package_info_list)
+# fast_route_plan_for_all_packages.remove(start_location)  # remove the placeholder location from the list
+# print(fast_route_plan_for_all_packages)
 
-        for pkgs in self.package_table.table:
-            for pkg in pkgs:
-                self.all_package_info_list.append(vars(pkg[1]))
-                must_on_same_truck_pkg = [13, 14, 15, 16, 19, 20]
 
-                # Urgent delivery packages that already in the Hub, but not included the ones that has to be in the same truck
-                if vars(pkg[1]).get('deadline') != 'EOD' and vars(pkg[1]).get(
-                        'special_note') == '' and must_on_same_truck_pkg.count(
-                        vars(pkg[1]).get('pid')) < 1:
-                    self.package_urgent_list.append(vars(pkg[1]))  # total of 7 out of 40
-                # Urgent delivery packages that has not yet arrive
-                elif vars(pkg[1]).get('deadline') != 'EOD' and vars(pkg[1]).get(
-                        'special_note') == delay_msg:  # total of 2 out of 40
-                    self.package_urgent_delayed_list.append(vars(pkg[1]))
-                # packages that delayed but not require urgent delivery
-                elif vars(pkg[1]).get('special_note') == delay_msg and vars(pkg[1]).get(
-                        'deadline') == 'EOD':  # total of 2 out of 40
-                    self.package_not_urgent_delayed_list.append(vars(pkg[1]))
-                # packages that has to be with truck2
-                elif vars(pkg[1]).get('special_note') == only_truck2:  # total of 4 out of 40
-                    self.package_with_truck2_only.append(vars(pkg[1]))
-                # packages with wrong address
-                elif vars(pkg[1]).get('special_note') == wrong_address:  # total of 1 out of 40
-                    self.package_with_wrong_address.append(vars(pkg[1]))
-                # packages that must load together
-                elif must_on_same_truck_pkg.count(vars(pkg[1]).get('pid')) > 0:  # total of 6 out of 40
-                    self.package_must_on_same_truck.append(vars(pkg[1]))
-                else:  # all remaining packages
-                    self.package_remaining_packages.append(vars(pkg[1]))  # total of 15 of 40
+truck = Truck(pkgs.package_urgent_list, pkgs.package_urgent_delayed_list,
+              pkgs.package_not_urgent_delayed_list, pkgs.package_with_wrong_address, pkgs.package_with_truck2_only,
+              pkgs.package_must_on_same_truck,
+              pkgs.package_remaining_packages)
+truck.load_cargo()
+start_time = "8:00 AM"
+route_for_truck1 = find_fastest_route(start_location, truck.truck1, start_time)
+route_for_truck1.remove(start_location)   # remove the placeholder location from the list
+print(route_for_truck1)
 
-    @property
-    def start_time(self):
-        return self._start_time
+#
+# route_for_truck2 = find_fastest_route(start_location, truck.truck2)
+# route_for_truck2.remove(start_location)   # remove the placeholder location from the list
+# print(route_for_truck2)
 
-    @start_time.setter
-    def start_time(self, value):
-        if value > int(8) * 60 + int(0):
-            self._start_time = value
-        else:
-            raise Exception("Sorry, you can leave the hub no earlier than 8:00AM.")
 
-    @property
-    def delivery_time(self):
-        return self._start_time
-
-    @delivery_time.setter
-    def delivery_time(self, value):
-        self._delivery_time = value
-
-    @property
-    def status_time(self):
-        return self._start_time
-
-    @start_time.setter
-    def start_time(self, value):
-        self._start_time = value
-
-    # # a format to display package info.
-    # def __str__(self):
-    #     return f'{self.pid} {self.address} {self.city} {self.state} {self.zip_code} {self.deadline} {self.weight} {self.special_note} {self.start_time()} {self.delivery_time} {self.status}'
-
-    # start_time = int(start_hour)*60 + int(start_minute)
-    # end_time = int(end_hour)*60 + int(end_minute)
-    # current_time =  datetime.now().hour*60 +datetime.now().minute
-    # if start_time <= current_time and end_time >= current_time:
-    # doSomething
+# print('======== WGUPS Routing Program =======')
+# ans = True
+# while ans:
+#     print("""
+#     1. Lookup A Package By Package ID
+#     2. List All Packages By Time
+#     3. Total Mileage Traveled By All Trucks
+#     4. Exit/Quit
+#     """)
+#
+#     ans = int(input("What Would You Like To Do? "))
+#     if ans == 1:
+#         print("do something")  # fix me
+#     elif ans == 2:
+#         print("do something")  # fix me
+#     elif ans == 3:
+#         print("do something")  # fix me
+#     elif ans == 4:
+#         print("\n Goodbye!")
+#         ans = None
+#     else:
+#         print("\n Not Valid Choice. Try again")
