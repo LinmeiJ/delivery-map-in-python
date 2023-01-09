@@ -13,13 +13,14 @@ class Package:
     # urgent means the deadline has a specific time except EOD
     all_package_info_list = []
     package_urgent_list = []
-    package_not_urgent_delayed_list = []
     package_urgent_delayed_list = []
-    package_remaining_packages = []
+    package_not_urgent_delayed_list = []
     package_with_wrong_address = []
     package_with_truck2_only = []
     package_must_on_same_truck = []
+    package_remaining_packages = []
 
+    
     def __init__(self, pkg_id, address, city, state, zip_code, deadline, weight, special_note, s_time="",
                  d_time="", delivery_status='At The Hub'):
         self.pid = int(pkg_id)
