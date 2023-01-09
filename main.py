@@ -1,9 +1,12 @@
-import service
-import HashTable
+from Package import Package
+from graph import Graph
+from truck import Truck
 
 # Initialize an empty hashtable to store packages and empty dictionary to store addresses and distances
-packageTable = HashTable.ChainingHashTable()
-graph = {}
+pkgs = Package(0, '', '', '', '', '', '', '', '', '', False)  # Create an instance of Package
+pkgs.load_package_data()
+graph = Graph()
+
 
 # set hub location
 start_location = '4001 South 700 East 84107'
