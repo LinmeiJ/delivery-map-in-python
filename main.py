@@ -2,11 +2,13 @@ from Package import Package
 from graph import Graph
 from truck import Truck
 
-# Initialize an empty hashtable to store packages and empty dictionary to store addresses and distances
+# Load packages from a csv file
 pkgs = Package(0, '', '', '', '', '', '', '', '', '', False)  # Create an instance of Package
 pkgs.load_package_data()
+# Load graph data from a csv file
 graph = Graph()
-
+# Initialize a truck object
+truck = Truck(pkgs.package_table)
 
 # set hub location
 start_location = '4001 South 700 East 84107'
@@ -22,8 +24,6 @@ def calc_distance(route1, route2):
 # Fix me: this is just for finding the fastest route for truck1. it can be refactored and combined with other method
 # / can be fixed when there is time
 def get_address_from_truck(trk):
-    # Set the current location to the starting location
-
     locations = []
 
     # get a list of just address of all packages
@@ -44,7 +44,10 @@ def find_fastest_route(current_location, locations):
         nearest_location = None
         nearest_distance = float('inf')
         for location in locations:
-            address = location.get('address') + ' ' + location.get('zip_code')
+            if type(location) is dict:
+                address = location['address'] + ' ' + location['zip_code']
+            else:
+                address = vars(location[1]).get('address') + ' ' + vars(location[1]).get('zip_code')
             location_distance = calc_distance(current_location, address)
             if location_distance != '' and location_distance is not None:
                 dist = float(location_distance)
@@ -64,17 +67,12 @@ def find_fastest_route(current_location, locations):
     # Return the final route
     return route
 
+truck.load_cargo(pkgs)
+
 
 route_plan_for_all_pkg = find_fastest_route(start_location, pkgs.all_package_info_list)
 route_for_urgent_delivery = find_fastest_route(start_location, pkgs.package_urgent_list)
-
-# load package into each truck
-truck = Truck(pkgs.package_table)
-truck.load_cargo(pkgs.package_urgent_list, pkgs.package_flight_delayed_list, pkgs.package_remaining_packages)
-
-# print(len(truck.truck1))
-shortest_path = find_fastest_route(start_location, get_address_from_truck(truck.truck1))
-# print(shortest_path)
+shortest_path_truck1 = find_fastest_route(start_location, get_address_from_truck(truck.truck1))
 
 # print('======== WGUPS Routing Program =======')
 # ans = True
