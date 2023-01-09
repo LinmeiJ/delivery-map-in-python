@@ -61,3 +61,5 @@ class Truck:
     # # # trucks travel at a speed of 18 miles/hr, leave hub no earlier than 8:00AM
     # def calc_time_travel(self, travel_miles):  # fix me
     #     pass
+
+
