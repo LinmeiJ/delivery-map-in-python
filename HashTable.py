@@ -1,4 +1,4 @@
-# The implementation is referenced from 'Hash Table class using Chaining' in ZyBook Chapter 9'
+# The reference for the following implementation is from 'Hash Table class using Chaining' in ZyBook Chapter 9
 class ChainingHashTable:
     # Constructor with optional initial capacity parameter.
     # Assigns all buckets with an empty list.
