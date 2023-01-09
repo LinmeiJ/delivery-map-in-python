@@ -2,10 +2,10 @@ import csv
 
 
 class Graph:
-    def __init__(self, csv_file, adjacency_list):
-        self.edges = adjacency_list
+    address_with_distance = {}
 
-        with open(csv_file, 'r') as file:
+    def __init__(self):
+        with open('./resource/WGUPS Distance Table.csv', 'r') as file:
             # Create a CSV reader object
             reader = csv.reader(file, delimiter=',')
 
@@ -23,21 +23,21 @@ class Graph:
                         vertex = vertexes[i]
                         # Add the edge to the dictionary: key is the starting address, value is a dictionary of
                         # destination addresses and distances from the starting address
-                        if vertex not in self.edges:
-                            self.edges[vertex] = [[dest_node, distance]]
+                        if vertex not in self.address_with_distance:
+                            self.address_with_distance[vertex] = [[dest_node, distance]]
                         else:
-                            self.edges[vertex].append([dest_node, distance])
+                            self.address_with_distance[vertex].append([dest_node, distance])
 
         # Driver can drive to location B from A, also can drive from A to B. The following is to add missing
-        # distance data from B to A, for instance, as the csv only proves distance from A to B
+        # distance data from B to A as reading the csv file only fill up distance data from one direction
         start = '4001 South 700 East 84107'
-        for k, v in self.edges.items():
+        for k, v in self.address_with_distance.items():
             if k == start:
                 pass
             else:
                 for dest in v:
                     if dest[1] == '':
-                        edge_list = self.edges.get(dest[0])
+                        edge_list = self.address_with_distance.get(dest[0])
                         for address in edge_list:
                             if address[0] == k:
                                 dest[1] = address[1]
