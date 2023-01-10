@@ -1,15 +1,19 @@
+import time
 from Package import Package
 from graph import Graph
 from truck import Truck
 
 # Load packages from a csv file
-pkgs = Package(0, '', '', '', '', '', '', '', '', '', False)  # Create an instance of Package
+pkgs = Package(0, '', '', '', '', '', '', '', '', '', '', False)  # Create an instance of Package
 pkgs.load_package_data()
 # Load graph data from a csv file
 graph = Graph()
-
 # set hub location with a package placeholder
-start_location = vars(Package(0, '4001 South 700 East', '', '', '84107', '', '', '', '', '', 'delivered'))
+start_location = vars(Package(0, '4001 South 700 East',
+                              'Salt Lake City', 'UT', '84107', '', '', '', '08:00 AM', '', 0, 'delivered'))
+
+total_delivery_time = 0
+total_delivery_miles = 0
 
 
 def calc_distance(route1, route2):
@@ -21,58 +25,66 @@ def calc_distance(route1, route2):
 
 
 # TSP algorithm for planning a route for a fast delivery
-def find_fastest_route(sta_location, loaded_truck, sta_time):
-    # Initialize a route and assign current location to it
-    route = []
-    priority_pkgs = []
-    current_time = start_time
-    for pkg in loaded_truck:
-        if pkg.get('deadline') != 'EOD':
-            priority_pkgs.append(pkg)
-    # Plan a route for priority packages first
-    add_nearest_locations_to_route(priority_pkgs, route, sta_location, current_time)
-    # plan the route based on existing priory route
-    add_nearest_locations_to_route(loaded_truck, route, sta_location, current_time)
 
-    # Return the final route
-    return route
+def find_fast_route(sta_location, loaded_truck):
+    # Initialize a route
+    route = [sta_location]
 
-
-def add_nearest_locations_to_route(loaded_truck, route, sta_location, sta_time):
     # Keep looping until all locations have been visited
-    route.append(start_location)
     while loaded_truck:
         # Find the nearest unvisited location to the current location
         nearest_location = None
         nearest_distance = float('inf')
-        for pkg in route:
-            current_location = pkg.get('address') + ' ' + pkg.get('zip_code')
-
+        current_location = sta_location.get('address') + ' ' + sta_location.get('zip_code')
         for pkg in loaded_truck:
-            if route.count(pkg) > 0:
-                continue
-            else:
-                address = pkg.get('address') + ' ' + pkg.get('zip_code')
-                location_distance = calc_distance(current_location, address)
-                if location_distance != '' and location_distance is not None:
-                    dist = float(location_distance)
-                    if dist < nearest_distance:
-                        nearest_location = pkg
-                        nearest_distance = dist
+            nearest_address = pkg.get('address') + ' ' + pkg.get('zip_code')
+            location_distance = calc_distance(current_location, nearest_address)
+            if location_distance != '' and location_distance is not None:
+                dist = float(location_distance)
+                if dist < nearest_distance:
+                    nearest_location = pkg
+                    nearest_distance = dist
         if nearest_location is not None:
-            # calc_delivery_time_by_distance(route, nearest_distance, start_time)  # fix me -->  need to calculate the time and delivery status, 
-            # Add the nearest location to the route
+            nearest_location.update({'travel_distance': nearest_distance})
             route.append(nearest_location)
+
             # Remove the nearest location from the list of unvisited locations
             loaded_truck.remove(
                 nearest_location)
         # Set the current location to the nearest location
         current_location = nearest_location
+    return route
 
 
-# fast_route_plan_for_all_packages = find_fastest_route(start_location, pkgs.all_package_info_list)
-# fast_route_plan_for_all_packages.remove(start_location)  # remove the placeholder location from the list
-# print(fast_route_plan_for_all_packages)
+def calc_time(dist):
+    time_used = dist * 60 / 18  # total time in minutes used from current location to nearst location
+    travel_in_hour = time_used / 60  # convert to hour if time_used more than or equal 60 minutes
+    if travel_in_hour != 0:
+        travel_in_minute = time_used % 60  # get the remaining minutes if time travel is over an hour
+    else:
+        travel_in_minute = time_used  # less than 60 minutes
+    return time_used, travel_in_hour, travel_in_minute
+
+
+def format_time(dist, start_time):
+    format_codes = "%I:%M %p"
+    time_obj = time.strptime(start_time, format_codes)
+    hour = time_obj[3]
+    minute = time_obj[4]
+
+    time_used, travel_in_hour, travel_in_minute = calc_time(dist)
+
+    update_hour = hour + travel_in_hour
+    update_minute = minute + travel_in_minute
+
+    if update_hour > 11:
+        meridiem = 'PM'
+    if update_hour > 12:
+        update_hour = update_hour - 12
+
+    new_time = f'{update_hour}:{update_minute} {meridiem}'
+
+    return time_used, new_time
 
 
 truck = Truck(pkgs.package_urgent_list, pkgs.package_urgent_delayed_list,
@@ -80,16 +92,21 @@ truck = Truck(pkgs.package_urgent_list, pkgs.package_urgent_delayed_list,
               pkgs.package_must_on_same_truck,
               pkgs.package_remaining_packages)
 truck.load_cargo()
-start_time = "8:00 AM"
-route_for_truck1 = find_fastest_route(start_location, truck.truck3, start_time)
-route_for_truck1.remove(start_location)   # remove the placeholder location from the list
+
+route_for_truck1 = find_fast_route(start_location, truck.truck1)
+route_for_truck1.remove(start_location)  # remove the placeholder location from the list
 print(route_for_truck1)
-
 #
-# route_for_truck2 = find_fastest_route(start_location, truck.truck1)
-# route_for_truck2.remove(start_location)   # remove the placeholder location from the list
-# print(route_for_truck2)
+def get_distance(route):
+    pass
 
+
+def start_delivery(route_for_truck, total_time, total_miles):
+    for route in route_for_truck1:
+        get_distance(route)
+
+
+start_delivery(route_for_truck1, total_delivery_time, total_delivery_miles)
 
 # print('======== WGUPS Routing Program =======')
 # ans = True

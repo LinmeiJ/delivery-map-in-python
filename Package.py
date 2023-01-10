@@ -3,16 +3,12 @@ import csv
 import HashTable
 
 
-# Deadline cases: 1) pkg 1, 13, 14, 16, 20, 29, 30, 31, 34, 37, 40: 10:30AM
-# 2) pkg 15: 9:00AM
-# 3) pkg 6: 10:30AM but pkg won't arrive to depot until 9:05AM
-# special notes: 1) package 3 & 18 & 36 & 38: Can 0nly be on truck 2 and deadline is EOD
-#    2) package 6 & 25 & 28 & 32: Delayed on flight -> will not arrive to depot until 9:05 am but pkg 6 & 25 also require to be delivered before 10:30AM (urgent)
-#    3) package 9: Wrong address listed
-#    4) package 14: Must be delivered with 15, 19,
-#    5) package 16: Must be delivered with 13, 19
-#    6) package 20: Must be delivered with 13, 15
-#       (^package 14, 13, 15, 16, 19, 20 must be at the same truck^)
+# Deadline cases: 1) pkg 1, 13, 14, 16, 20, 29, 30, 31, 34, 37, 40: 10:30AM 2) pkg 15: 9:00AM 3) pkg 6: 10:30AM but
+# pkg won't arrive to depot until 9:05AM special notes: 1) package 3 & 18 & 36 & 38: Can 0nly be on truck 2 and
+# deadline is EOD 2) package 6 & 25 & 28 & 32: Delayed on flight -> will not arrive to depot until 9:05 am but pkg 6
+# & 25 also require to be delivered before 10:30AM (urgent) 3) package 9: Wrong address listed 4) package 14: Must be
+# delivered with 15, 19, 5) package 16: Must be delivered with 13, 19 6) package 20: Must be delivered with 13,
+# 15 (^package 14, 13, 15, 16, 19, 20 must be at the same truck^)
 
 class Package:
     package_table = HashTable.ChainingHashTable()
@@ -27,8 +23,8 @@ class Package:
     package_must_on_same_truck = []
     package_remaining_packages = []
 
-    def __init__(self, pkg_id, address, city, state, zip_code, deadline, weight, special_note, s_time="",
-                 d_time="", delivery_status='At The Hub'):
+    def __init__(self, pkg_id, address, city, state, zip_code, deadline, weight, special_note, s_time='',
+                 d_time="", distance=0, delivery_status='At The Hub'):
         self.pid = int(pkg_id)
         self.address = address
         self.city = city
@@ -37,8 +33,9 @@ class Package:
         self.deadline = deadline
         self.weight = weight
         self.special_note = special_note
-        self._start_time = s_time
+        self.start_time = s_time
         self.delivery_time = d_time
+        self.travel_distance = distance
         self.status = delivery_status
 
     # load package data from a csv file and category them
@@ -67,7 +64,8 @@ class Package:
                 self.all_package_info_list.append(vars(pkg[1]))
                 must_on_same_truck_pkg = [13, 14, 15, 16, 19, 20]
 
-                # Urgent delivery packages that already in the Hub, but not included the ones that has to be in the same truck
+                # Urgent delivery packages that already in the Hub, but not included the ones that has to be in the
+                # same truck
                 if vars(pkg[1]).get('deadline') != 'EOD' and vars(pkg[1]).get(
                         'special_note') == '' and must_on_same_truck_pkg.count(
                         vars(pkg[1]).get('pid')) < 1:
@@ -91,40 +89,20 @@ class Package:
                     self.package_must_on_same_truck.append(vars(pkg[1]))
                 else:  # all remaining packages
                     self.package_remaining_packages.append(vars(pkg[1]))  # total of 15 of 40
+    # @property
+    # def start_time(self):
+    #     return self._start_time
+    #
+    # @start_time.setter
+    # def start_time(self, value):
+    #     if value > int(8) * 60 + int(0):
+    #         self._start_time = value
+    #     else:
+    #         raise Exception("Sorry, you can leave the hub no earlier than 8:00AM.")
 
-    @property
-    def start_time(self):
-        return self._start_time
-
-    @start_time.setter
-    def start_time(self, value):
-        if value > int(8) * 60 + int(0):
-            self._start_time = value
-        else:
-            raise Exception("Sorry, you can leave the hub no earlier than 8:00AM.")
-
-    @property
-    def delivery_time(self):
-        return self._start_time
-
-    @delivery_time.setter
-    def delivery_time(self, value):
-        self._delivery_time = value
-
-    @property
-    def status_time(self):
-        return self._start_time
-
-    @start_time.setter
-    def start_time(self, value):
-        self._start_time = value
 
     # # a format to display package info.
     # def __str__(self):
     #     return f'{self.pid} {self.address} {self.city} {self.state} {self.zip_code} {self.deadline} {self.weight} {self.special_note} {self.start_time()} {self.delivery_time} {self.status}'
 
-    # start_time = int(start_hour)*60 + int(start_minute)
-    # end_time = int(end_hour)*60 + int(end_minute)
-    # current_time =  datetime.now().hour*60 +datetime.now().minute
-    # if start_time <= current_time and end_time >= current_time:
-    # doSomething
+
