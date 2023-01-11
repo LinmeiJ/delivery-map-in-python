@@ -95,7 +95,7 @@ def format_time(dist, start_time):
     return time_used, new_time.strftime('%I:%M %p')
 
 
-def one_minute_per_mile():
+def minute_per_mile():
     return 60 / 18
 
 
@@ -103,7 +103,7 @@ def calc_total_time_for_delivery(packages_in_truck):
     total_mile = 0
     for pkg in packages_in_truck:
         total_mile += pkg.get('travel_distance')
-    total_time = one_minute_per_mile() * total_mile
+    total_time = minute_per_mile() * total_mile
     return int(total_time)
 
 
@@ -137,12 +137,6 @@ def get_prioritize_route(s_location, trk):
             remaining_pkgs.append(pkg)
     priority_pkgs_route = find_fast_route(s_location, urgent_pkgs)
 
-    # urgent_pkgs_route = find_fast_route(s_location, urgent_pkgs)
-    # last_location_in_urgent_route = urgent_pkgs_route[len(urgent_pkgs_route) - 1][1]
-    # s_location = last_location_in_urgent_route.get('address') + last_location_in_urgent_route.get('zip_code')
-    #
-    # remaining_pkgs_route = find_fast_route(s_location, remaining_pkgs)
-
     return priority_pkgs_route, remaining_pkgs
 
 
@@ -165,6 +159,8 @@ def plan_and_deliver_packages(trk):
             total_time, total_mile, second_route = start_package_delivery(remaining_pkg_route, total_time, total_mile,
                                                                           start_delivery_time)
             route.extend(second_route)
+        else:
+            print(" Some packages may delayed")
 
     return total_time, total_mile, route
 
