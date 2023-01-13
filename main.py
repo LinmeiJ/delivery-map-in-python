@@ -47,6 +47,7 @@ def find_fast_route(sta_location, loaded_truck):
         nearest_location = None
         nearest_distance = float('inf')
         for pkg in pkg_in_truck:
+            # if pkg['status'] == 'delivered':
             nearest_address = pkg['address'] + ' ' + pkg['zip_code']
             location_distance = calc_distance(current_location,
                                               nearest_address)
@@ -124,18 +125,16 @@ def can_delivery_on_time_for_all_pkg(estimate_time):
         return True
 
 
-def start_package_delivery(packages_in_route, total_time, total_miles, time_start_to_deliver, hub_location,
-                           package_9=None):
+def start_package_delivery(packages_in_route, total_time, total_miles, time_start_to_deliver, hub_location, pkg9=None):
+
     packages_in_route.append(hub_location)
 
     # Calculate the time back to Hub after delivered all packages
     last_package_location = packages_in_route[-2].get('address') + ' ' + packages_in_route[-2].get('zip_code')
     hub_address = packages_in_route[-1].get('address') + ' ' + packages_in_route[-1].get('zip_code')
     distance_to_hub = float(calc_distance(hub_address, last_package_location))
-
-    for i, pkg in enumerate(packages_in_route):
-        # if pkg.get('status') == 'delivered':
-            # continue
+    start_loc = None
+    for pkg in packages_in_route:
         dist = pkg.get('travel_distance')
         time_used, delivered_time = format_time(dist, time_start_to_deliver)
         pkg.update({'start_time': delivered_time})
@@ -144,16 +143,12 @@ def start_package_delivery(packages_in_route, total_time, total_miles, time_star
         time_start_to_deliver = delivered_time
         total_time += time_used
         total_miles += dist
-        if package_9 is not None and is_address_updated(delivered_time):
-            packages_in_route.remove(hub_location)
-            packages_in_route.append(package_9)
-            new_route = find_fast_route(pkg, packages_in_route[i + 1:])
-            st_time = pkg.get('delivery_time')
-            total_time, total_miles, packages_in_route = start_package_delivery(new_route, total_time,
-                                                                                total_miles,
-                                                                                st_time, hub_location)
+        start_loc = pkg
+        if pkg9 is not None and is_address_updated(pkg.get('delivery_time')):
+            packages_in_route.append(pkg9)
+            new_route = find_fast_route(start_loc, packages_in_route)
+            total_time, total_miles, route = start_package_delivery(new_route, total_time, total_miles, start_loc.get('delivery_time'), hub_location)
             break
-
     total_miles += round(distance_to_hub, 2)
 
     total_time = total_time + int(distance_to_hub * minute_per_mile())
@@ -203,8 +198,15 @@ def plan_and_deliver_packages(trk, truck_number, leaving_hub_time):
     total_time = 0
     total_mile = 0
     route = []
-
+    pkg9 = None
     route_for_truck = find_fast_route(hub, trk)
+    if truck_number == 'truck3':
+        for p in route_for_truck:
+            if p.get('pid') == 9:
+                route_for_truck.remove(p)
+                route_for_truck.remove(hub)
+                pkg9 = p
+        route_for_truck = find_fast_route(hub, route_for_truck)
     route_for_truck.remove(hub)  # remove the placeholder location from the list
     estimate_total_delivery_time = 0
 
@@ -212,20 +214,9 @@ def plan_and_deliver_packages(trk, truck_number, leaving_hub_time):
     # if the first route plan doesn't work, we need to prioritize the delivery route.
     if truck_number == 'truck1':
         estimate_total_delivery_time = calc_total_time_for_delivery(route_for_truck)
-
     # if all packages can be delivered before or at 10:30AM
     if can_delivery_on_time_for_all_pkg(estimate_total_delivery_time) is True:
-        if truck_number == 'truck3':
-            if is_address_updated('09:20 AM'):  # start to delivery after all packages have arrived
-                total_time, total_mile, route = start_package_delivery(route_for_truck, 0, 0, leaving_hub_time, hub)
-            else:
-                packages_truck3 = copy.deepcopy(trk)
-                pkg9 = remove_package(packages_truck3)
-                new_route = find_fast_route(hub, packages_truck3)
-                new_route.remove(hub)
-                start_package_delivery(new_route, 0, 0, leaving_hub_time, hub, pkg9)
-        else:
-            total_time, total_mile, route = start_package_delivery(route_for_truck, 0, 0, leaving_hub_time, hub)
+        total_time, total_mile, route = start_package_delivery(route_for_truck, 0, 0, leaving_hub_time, hub, pkg9)
     else:  # get a new route based on priority packages
         urgent_pkg_route_truck, remaining_pkg_truck = get_prioritize_route(hub, trk)
         estimate_total_delivery_time = calc_total_time_for_delivery(urgent_pkg_route_truck)

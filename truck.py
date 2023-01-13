@@ -28,14 +28,16 @@ class Truck:
         self.load_cargo_by_remaining_packages()
 
     def load_cargo_by_urgency(self):
-        size = len(self.package_urgent_list)
-        for pkg in self.package_urgent_list:
-            self.truck1.append(pkg)
-
         # there are a list of packages are also consider as urgent packages, so load them along with truck1
         for pkg in self.package_must_on_same_truck:
             if self.truck1.count(pkg) < 1:
                 self.truck1.append(pkg)
+
+        for pkg in self.package_urgent_list:
+            if len(self.truck1) < 16:
+                self.truck1.append(pkg)
+            else:
+                self.truck2.append(pkg)
 
     def load_cargo_by_remaining_packages(self):
         for pkg in self.package_with_truck2_only:
@@ -62,4 +64,3 @@ class Truck:
                 truck2.append(pkg)
             else:
                 truck3.append(pkg)
-
