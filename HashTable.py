@@ -8,6 +8,7 @@ class ChainingHashTable:
         for i in range(initial_capacity):
             self.table.append([])
 
+    # radix sort algorithm to store packages in hash table
     # Inserts a new pair into the hash table.
     def insert(self, key, value):
         bucket = self.find_bucket(key)

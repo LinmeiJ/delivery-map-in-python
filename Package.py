@@ -10,14 +10,6 @@ import HashTable
 # delivered with 15, 19, 5) package 16: Must be delivered with 13, 19 6) package 20: Must be delivered with 13,
 # 15 (^package 14, 13, 15, 16, 19, 20 must be at the same truck^)
 
-def update_package9_address(pkg):
-    pkg.update({'address': '410 S State St'})
-    pkg.update({'city': 'Salt Lake City'})
-    pkg.update({'state': 'UT'})
-    pkg.update({'zip_code': '84111'})
-    return pkg
-
-
 class Package:
     package_table = HashTable.ChainingHashTable()
 
@@ -97,4 +89,3 @@ class Package:
                     self.package_must_on_same_truck.append(vars(pkg[1]))
                 else:  # all remaining packages
                     self.package_remaining_packages.append(vars(pkg[1]))  # total of 15 of 40
-
