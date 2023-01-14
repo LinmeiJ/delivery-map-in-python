@@ -1,5 +1,6 @@
 import copy
 # from datetime import datetime, time
+from datetime import datetime, timedelta
 
 import graph
 from Package import Package
@@ -7,8 +8,10 @@ from truck import Truck
 
 
 class Utils:
+    start_time = datetime.strptime("8:00 AM", "%I:%M %p")
+
     hub = vars(Package(0, '4001 South 700 East',
-                       'Salt Lake City', 'UT', '84107', '', '', '', '08:00 AM', '', 0,
+                       'Salt Lake City', 'UT', '84107', '', '', '', start_time, '', 0,
                        'placeholder-hub-location'))
 
     truck = Truck()
@@ -24,10 +27,6 @@ class Utils:
 
         # Load graph data from a csv file
         self.graph = graph.Graph()
-        # set hub location with a package placeholder
-        self.hub = vars(Package(0, '4001 South 700 East',
-                                'Salt Lake City', 'UT', '84107', '', '', '', '08:00 AM', '', 0,
-                                'placeholder-hub-location'))
 
         self.list_of_pkgs = self.remove_keys_from_pkgs_table()
 
@@ -44,19 +43,49 @@ class Utils:
 
         # Always load the urgent delivery packages first
         route_for_urgent_pkgs = self.find_fast_route(Utils.hub, self.pkgs.package_urgent_list)
+
         # if one truck can hold all the urgent packages and can deliver one time, load to the truck1
         if len(route_for_urgent_pkgs) < 16 and Utils.can_delivery_on_time_for_all_pkg(
                 Utils.calc_total_time_for_delivery(route_for_urgent_pkgs)):
             self.set_route1(route_for_urgent_pkgs)
+            self.set_route2()
         else:
-            pass
+            num_of_pkgs = Utils.deliverable_packages(route_for_urgent_pkgs, Utils.start_time)
+            urgent_pkgs1 = route_for_urgent_pkgs[0:num_of_pkgs + 1]
+            urgent_pkgs2 = route_for_urgent_pkgs[num_of_pkgs + 1:]
 
-        # first_route, second_route, third_route = urgent_package_delivery_feasibility(route)
+            self.set_route1(urgent_pkgs1)
+            self.set_route2(urgent_pkgs2)
+
+    def set_route2(self, pkgs=None):
+        self.truck.load_packages_to_truck2(pkgs)
+        self.truck.load_packages_to_truck2(self.pkgs.package_with_truck2_only)
+        self.truck.load_packages_to_truck2(self.pkgs.package_remaining_packages)
+
+        self.truck.truck2.remove(Utils.hub)
+        # Update package status to 'en route'
+        self.update_pkg_status(self.truck.truck2, 'en route')
+        self.route2 = self.find_fast_route(self.hub, self.truck.truck2)
+
+    # recalculate the route and ensure the fastest route still can meet the delivery deadline.
+    def recalculate_route_based_on_urgency(self, route_for_urgent_pkgs, temp_list):
+        route = self.find_fast_route(self.hub, self.truck.truck1)
+        route.remove(Utils.hub)
+        if Utils.can_delivery_on_time_for_all_pkg(Utils.calc_total_time_for_delivery(route)):
+            return route
+        else:  # Deliver the urgent packages first then the rest of packages
+            remaining_route = self.find_fast_route(route_for_urgent_pkgs[-1], temp_list)
+            remaining_route.remove(route_for_urgent_pkgs[-1])
+            new_route = route_for_urgent_pkgs + remaining_route
+            return new_route
+
+        # set route for truck1
 
     def set_route1(self, route_for_urgent_pkgs):
-        route_for_urgent_pkgs.remove(self.hub)
+        route_for_urgent_pkgs.remove(Utils.hub)
         self.truck.load_packages_to_truck1(route_for_urgent_pkgs)
         temp_list = []
+
         # add remaining packages until truck1 is full
         for pkg in self.pkgs.package_remaining_packages:
             if len(self.truck.truck1) < 16:
@@ -66,13 +95,24 @@ class Utils:
                 break
         # Update package status to 'en route'
         self.update_pkg_status(self.truck.truck1, 'en route')
-        # recalculate the route and ensure the fastest route still can meet the delivery deadline.
-        route = self.find_fast_route(self.hub, self.truck.truck1)
-        if Utils.can_delivery_on_time_for_all_pkg(Utils.calc_total_time_for_delivery(route)):
-            self.route1 = route
-        else:  # Deliver the urgent packages first then the rest of packages
-            new_route = route_for_urgent_pkgs + self.find_fast_route(route_for_urgent_pkgs[-1], temp_list)
-            self.route1 = new_route
+        self.route1 = self.recalculate_route_based_on_urgency(route_for_urgent_pkgs, temp_list)
+        print('here')
+
+    # This calculates how many packages a truck carries to delivery all urgent package on time based on urgent package list
+    @staticmethod
+    def deliverable_packages(packages, start_time):
+
+        if not packages:  # check if it is empty
+            return 0
+
+        pkg = packages[0]
+        time_elapsed = timedelta(hours=(pkg.get('travel_distance') / 18))  # Truck travels 18 miles per hour
+
+        if start_time + time_elapsed <= datetime.strptime("10:30 AM",
+                                                          "%I:%M %p"):  # the latest urgent package is at 10:30AM
+            return 1 + Utils.deliverable_packages(packages[1:], start_time + time_elapsed)
+        else:
+            return 0
 
     def update_pkg_status(self, truck, status):
         for pkg in self.list_of_pkgs:

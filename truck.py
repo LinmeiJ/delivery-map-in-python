@@ -35,9 +35,15 @@ class Truck:
     #     self.load_cargo_by_remaining_packages()
     #
     def load_packages_to_truck1(self, pkgs):
-        for pkg in pkgs:
-            self.truck1.append(pkg)
+        if pkgs is not None:
+            for pkg in pkgs:
+                self.truck1.append(pkg)
 
+    def load_packages_to_truck2(self, pkgs):
+        if pkgs is not None:
+            for pkg in pkgs:
+                if self.truck1.count(pkg) < 1 and len(self.truck2) < 16:
+                    self.truck2.append(pkg)
     # def load_delayed_packages(truck, packages):
     #     for pkg in packages:
     #         truck.append(pkg)
