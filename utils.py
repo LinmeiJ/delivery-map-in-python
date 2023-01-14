@@ -79,8 +79,7 @@ class Utils:
             new_route = route_for_urgent_pkgs + remaining_route
             return new_route
 
-        # set route for truck1
-
+    # set route for truck1
     def set_route1(self, route_for_urgent_pkgs):
         route_for_urgent_pkgs.remove(Utils.hub)
         self.truck.load_packages_to_truck1(route_for_urgent_pkgs)
