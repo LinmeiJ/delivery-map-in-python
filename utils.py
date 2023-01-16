@@ -1,6 +1,6 @@
 import copy
-# from datetime import datetime, time
-from datetime import datetime, timedelta
+import math
+from datetime import datetime, timedelta, time
 
 import graph
 from Package import Package
@@ -8,7 +8,10 @@ from truck import Truck
 
 
 class Utils:
-    start_time = datetime.strptime("8:00 AM", "%I:%M %p")
+
+    today = datetime.today().date()
+    leaving_time = time(8, 0)
+    start_time = datetime.combine(today, leaving_time)
 
     hub = vars(Package(0, '4001 South 700 East',
                        'Salt Lake City', 'UT', '84107', '', '', '', start_time, '', 0,
@@ -31,6 +34,22 @@ class Utils:
         self.list_of_pkgs = self.remove_keys_from_pkgs_table()
 
         self.pkg_loading_optimization()
+        self.delivery_packages()
+
+        print(len(self.truck.truck1))
+        print(self.truck.truck1)
+        print(
+            f'miles in total: {self.truck.total_delivery_miles_truck1}  and time in total: {self.truck.total_delivery_time_truck1}')
+
+        print(len(self.truck.truck2))
+        print(self.truck.truck2)
+        print(
+            f'miles in total: {self.truck.total_delivery_miles_truck2}  and time in total: {self.truck.total_delivery_time_truck2}')
+
+        print(len(self.truck.truck3))
+        print(self.truck.truck3)
+        print(
+            f'miles in total: {self.truck.total_delivery_miles_truck3}  and time in total: {self.truck.total_delivery_time_truck3}')
 
     def remove_keys_from_pkgs_table(self):
         pkg_info = []
@@ -43,7 +62,7 @@ class Utils:
     def load_more_packages(self, urgent_pkg_route, truck, pkgs1, pkgs2, space_size):
         remaining_pkg_list = []  # Initialize a temp list in case we need find fast route independently
 
-        # There are few packages has to be load to the same truck
+        # Optional.... different type of pkgs
         if pkgs1 is not None:
             for pkg in pkgs1:
                 if pkg.get('status') != 'loaded':
@@ -60,16 +79,27 @@ class Utils:
                 else:
                     break
 
-        # Calculate a new route after combing all packages, set the Hub location as the beginning of the route
+        # Calculate a new route after combing all packages, already set the Hub location as the beginning of the route
         new_route = self.find_fast_route(Utils.hub, truck)
 
         # Check if the fastest new route can also deliver urgent packages on time
         if Utils.can_delivery_on_time_for_all_pkg(
                 Utils.calc_total_time_for_delivery(new_route)):
+            truck.clear()
+            truck.extend(new_route)
             return new_route
         else:
             new_route = self.calculate_route_based_on_urgency(remaining_pkg_list, urgent_pkg_route)
+            truck.clear()
+            truck.extend(new_route)
             return new_route
+
+    def append_hub_as_final_destination(self, route):
+        hub_location = copy.deepcopy(Utils.hub)
+        current_address = route[-1].get('address') + ' ' + route[-1].get('zip_code')
+        travel_distance = self.drive_back_hub(current_address)
+        hub_location.update({'travel_distance': travel_distance})
+        route.append(hub_location)
 
     def calculate_route_based_on_urgency(self, remaining_pkg_list, urgent_pkg_route):
         # Calculate the route for remaining pkgs based on the last pkg location in the urgent delivery route
@@ -77,6 +107,7 @@ class Utils:
         # Check if there are addresses in remaining packages that are already contained in the urgent route
         Utils.remove_duplicated_location(urgent_pkg_route, remaining_pkg_list)
         # find a fast route based on the last urgent pkg location as starting point
+
         remaining_route = self.find_fast_route(last_urgent_pkg_location, remaining_pkg_list)
         remaining_route.remove(last_urgent_pkg_location)
         # Return a new route that combines both routes
@@ -99,7 +130,7 @@ class Utils:
             if remaining_route[i].get('pid') in pkg_ids:
                 remaining_route.pop(i)
 
-    def update_packages_status(self, pkgs):
+    def update_packages_status_loaded(self, pkgs):
         for pkg in self.pkgs.package_urgent_list:
             for p in pkgs:
                 if pkg.get('pid') == p.get('pid'):
@@ -125,14 +156,13 @@ class Utils:
 
         # Split the packages into 2 trucks
         else:
-            self.get_route_by_splitting_urgent_packages(route_for_urgent_pkgs)
+            self.set_route_by_splitting_urgent_packages(route_for_urgent_pkgs)
 
         # Load truck2
         # If there is no urgent packages
         if len(self.truck.truck2) == 0:
             self.truck.load_packages_to_truck2(self.pkgs.package_with_truck2_only)
-            if len(self.truck.truck2) < 16 - len(self.pkgs.package_urgent_delayed_list) - len(
-                    self.pkgs.package_not_urgent_delayed_list):
+            if len(self.truck.truck2) < 16:
                 self.truck.load_packages_to_truck2(self.pkgs.package_remaining_packages)
         else:
             self.truck.load_packages_to_truck2(self.pkgs.package_with_truck2_only)
@@ -146,13 +176,17 @@ class Utils:
         self.truck.load_packages_to_truck3(self.pkgs.package_with_wrong_address)
         self.truck.load_packages_to_truck3(self.pkgs.package_remaining_packages)
 
-        self.route3 = self.find_fast_route(Utils.hub, self.truck.truck3)  # fix me, the leaving hub time for truck3 will be the time when truck 1 comes back
+        self.route3 = self.find_fast_route(Utils.hub,
+                                           self.truck.truck3)  # fix me, the leaving hub time for truck3 will be the time when truck 1 comes back
 
     def set_route2(self):
         route = self.find_fast_route(Utils.hub, self.truck.truck2)
         if Utils.can_delivery_on_time_for_all_pkg(
                 Utils.calc_total_time_for_delivery(route)):
-            self.route1 = route
+            self.route2 = route
+
+            self.truck.truck2.clear()
+            self.truck.truck2.extend(route)
         else:
             self.find_new_route()
 
@@ -169,17 +203,23 @@ class Utils:
         remaining_pkg_route = self.find_fast_route(urgent_pkg_route[-1], remaining_pkgs)
         remaining_pkg_route.remove(urgent_pkg_route[-1])
 
-        self.route2 = urgent_pkg_route + remaining_pkg_route
+        new_route = urgent_pkg_route + remaining_pkg_route
+        self.route2 = new_route
+
+        self.truck.truck2.clear()
+        self.truck.truck2.extend(new_route)
 
     def get_route_by_full_load_truck1(self, route_for_urgent_pkgs):
-        # Load urgent packages to truck1
-        self.update_packages_status(route_for_urgent_pkgs)
+        # Update packages status to loaded
+        self.update_packages_status_loaded(route_for_urgent_pkgs)
+
         # Load more packages to truck1
         self.truck.load_packages_to_truck1(route_for_urgent_pkgs)
 
         # Truck's max capacity is 16
         if len(self.truck.truck1) == 16:
             self.route1 = route_for_urgent_pkgs
+
         elif len(self.truck.truck1) < 16:
             self.route1 = self.load_partial_truck_and_get_route(route_for_urgent_pkgs, self.truck.truck1,
                                                                 None,
@@ -211,35 +251,39 @@ class Utils:
                 rest_count -= 1
         return urgent_pkgs1, urgent_pkgs2
 
-    def get_route_by_splitting_urgent_packages(self, route_for_urgent_pkgs):
+    def set_route_by_splitting_urgent_packages(self, route_for_urgent_pkgs):
         # find out how many urgent packages can one truck carry based on the latest delivery deadline at 10:30 AM
         num_of_pkgs = Utils.deliverable_packages_count(route_for_urgent_pkgs, Utils.start_time)
         # Split the urgent packages, load truck1 first
         urgent_pkgs1, urgent_pkgs2 = self.split_packages(num_of_pkgs, len(route_for_urgent_pkgs))
 
         self.truck.load_packages_to_truck1(self.find_fast_route(Utils.hub, urgent_pkgs1))
-        self.update_packages_status(urgent_pkgs1)
+        self.update_packages_status_loaded(urgent_pkgs1)
+
+        # Load and make sure truck1 is full
         if len(self.truck.truck1) < 16:
             self.route1 = self.load_partial_truck_and_get_route(urgent_pkgs1, self.truck.truck1,
                                                                 self.pkgs.package_must_on_same_truck,
                                                                 self.pkgs.package_remaining_packages)
+
         else:
             self.route1 = urgent_pkgs1
-        # Load the rest to truck2
+
+        self.truck.truck1.clear()
+        self.truck.truck1.extend(self.route1)
+
+        # Load the rest of urgent delivery packages to truck2
         self.route2 = self.truck.load_packages_to_truck2(self.find_fast_route(Utils.hub, urgent_pkgs2))
-        self.update_packages_status(urgent_pkgs2)
-        if len(self.truck.truck2) < 16:
-            space_size_for_delayed_pkgs = len(self.pkgs.package_urgent_delayed_list) + len(
-                self.pkgs.package_not_urgent_delayed_list)
-            self.route2 = self.load_partial_truck_and_get_route(urgent_pkgs2, self.truck.truck2,
-                                                                self.pkgs.package_remaining_packages,
-                                                                self.pkgs.package_with_truck2_only,
-                                                                space_size_for_delayed_pkgs)
+        self.update_packages_status_loaded(urgent_pkgs2)
+        # if len(self.truck.truck2) < 16:
+        #     space_size_for_delayed_pkgs = len(self.pkgs.package_urgent_delayed_list) + len(
+        #         self.pkgs.package_not_urgent_delayed_list)
+        #     self.route2 = self.load_partial_truck_and_get_route(urgent_pkgs2, self.truck.truck2,
+        #                                                         self.pkgs.package_remaining_packages,
+        #                                                         self.pkgs.package_with_truck2_only,
+        #                                                         space_size_for_delayed_pkgs)
 
     def load_partial_truck_and_get_route(self, route_for_urgent_pkgs, truck, pkgs1, pkgs2, space_size=0):
-        # Each time when call find_fast_route function, the returned the route adds hub location as the beginning of the route
-        route_for_urgent_pkgs.remove(Utils.hub)
-        self.truck.truck1.remove(Utils.hub)
         # Load more packages until truck1 is full and also set the final route for truck1
         return self.load_more_packages(route_for_urgent_pkgs, truck, pkgs1, pkgs2, space_size)
 
@@ -259,21 +303,13 @@ class Utils:
         else:
             return 0
 
-    def exclude_delayed_pkgs(self):
-        delayed_pkgs = self.pkgs.package_urgent_delayed_list + self.pkgs.package_not_urgent_delayed_list
-        pkgs_in_hub = []
-        for pkg in self.list_of_pkgs:
-            if delayed_pkgs.count(pkg) > 0:
-                continue
-            else:
-                pkgs_in_hub.append(pkg)
-        return pkgs_in_hub
-
     # TSP algorithm for planning a route for a fast delivery
     def find_fast_route(self, sta_location, p):
         packages = copy.deepcopy(p)
         # Initialize a route
-        route = [sta_location]
+        if sta_location.get('pid') == 0:
+            sta_location.update({'distance': 0})
+        route = []
         current_location = sta_location.get('address') + ' ' + sta_location.get('zip_code')
         nearest_address = ''
         # Keep looping until all locations have been visited
@@ -284,8 +320,7 @@ class Utils:
             for pkg in packages:
                 # if pkg['status'] == 'delivered':
                 nearest_address = pkg['address'] + ' ' + pkg['zip_code']
-                location_distance = self.calc_distance(current_location,
-                                                       nearest_address)
+                location_distance = self.calc_distance(current_location, nearest_address)
                 if location_distance != '' and location_distance is not None:
                     dist = float(location_distance)
                     if dist < nearest_distance:
@@ -305,11 +340,11 @@ class Utils:
                 current_location = nearest_location.get('address') + ' ' + nearest_location.get('zip_code')
         return route
 
-    def calc_distance(self, address1, address2):
+    def calc_distance(self, start, end):
         for kv in self.graph.address_with_distance.items():
-            if kv[0] == address1:
+            if kv[0] == start:
                 for elem in kv[1]:
-                    if elem[0] == address2:
+                    if elem[0] == end:
                         return elem[1]
 
     @staticmethod
@@ -320,7 +355,7 @@ class Utils:
     def calc_total_time_for_delivery(packages_in_route):
         total_mile = 0
         for pkg in packages_in_route:
-            total_mile += pkg.get('travel_distance')
+            total_mile += int(pkg.get('travel_distance'))
         total_time = Utils.minute_per_mile() * total_mile
         return int(total_time)
 
@@ -338,139 +373,223 @@ class Utils:
         else:
             return False
 
+    @staticmethod
+    def update_packages_status_en_route(truck):
+        for pkg in truck:
+            if pkg.get('pid') == 0:
+                pkg.update({'status': 'hub location place holder'})
+                continue
+            pkg.update({'status': 'en route'})
+
     def delivery_packages(self):
-        pass
-        # return total_time, total_mile, final_route
+        start_time = Utils.start_time
 
-    # def start_package_delivery(self, packages_in_route, total_time, total_miles, time_start_to_deliver, hub_location,
-    #                            pkg9=None):
-    #     Utils.update_package_status_to_en_route(packages_in_route)
-    #     back_to_hub = copy.deepcopy(hub_location)
-    #     packages_in_route.append(back_to_hub)
-    #
-    #     # Calculate the time back to Hub after delivered all packages
-    #     last_package_location = packages_in_route[-2].get('address') + ' ' + packages_in_route[-2].get('zip_code')
-    #     hub_address = packages_in_route[-1].get('address') + ' ' + packages_in_route[-1].get('zip_code')
-    #     distance_to_hub = float(Utils.calc_distance(hub_address, last_package_location))
-    #
-    #     for pkg in packages_in_route:
-    #         if pkg.get('status') == 'delivered' and pkg.get('pid') != 0:
-    #             continue
-    #         if pkg.get('pid') == 0:
-    #             pkg.update({'travel_distance': distance_to_hub})
-    #         dist = pkg.get('travel_distance')
-    #         time_used, delivered_time = Utils.format_time(dist, time_start_to_deliver)
-    #         pkg.update({'start_time': delivered_time})
-    #         pkg.update({'delivery_time': delivered_time})
-    #         pkg.update({'status': 'delivered'})
-    #         time_start_to_deliver = delivered_time
-    #         total_time += time_used
-    #         total_miles += dist
-    #         start_loc = pkg
-    #         if pkg9 is not None and Utils.is_address_updated(pkg.get('delivery_time')):
-    #             packages_in_route.remove(hub_location)
-    #             Utils.update_package9_address(pkg9)
-    #             Utils.packages_in_route.append(pkg9)
-    #             new_route = Utils.find_fast_route(start_loc, packages_in_route)
-    #             total_time, total_miles, packages_in_route = Utils.start_package_delivery(new_route, total_time,
-    #                                                                                       total_miles,
-    #                                                                                       start_loc.get(
-    #                                                                                           'delivery_time'),
-    #                                                                                       hub_location)
-    #             break
-    #
-    #     # total_miles += round(distance_to_hub, 2)
-    #
-    #     # total_time = total_time + int(distance_to_hub * minute_per_mile())
-    #
-    #     return total_time, round(total_miles, 2), packages_in_route
+        # Delivery pkgs in truck1
+        Utils.update_packages_status_en_route(self.truck.truck1)
+        self.delivery_pkgs_in_truck1(start_time)
 
-    # @staticmethod
-    # def calc_time(dist):
-    #     time_used = int(dist * 60 / 18)  # total time in minutes used from current location to nearst location
-    #     travel_in_hour = int(time_used / 60)  # convert to hour if time_used more than or equal 60 minutes
-    #     if travel_in_hour != 0:
-    #         travel_in_minute = int(time_used % 60)  # get the remaining minutes if time travel is over an hour
-    #     else:
-    #         travel_in_minute = time_used  # less than 60 minutes
-    #     return time_used, travel_in_hour, travel_in_minute
-    #
-    # @staticmethod
-    # def format_time(dist, start_time):
-    #     format_str = '%I:%M %p'
-    #     time_obj = datetime.strptime(start_time, format_str).time()
-    #     hour = time_obj.hour
-    #     minute = time_obj.minute
-    #
-    #     time_used, travel_in_hour, travel_in_minute = Utils.calc_time(dist)
-    #
-    #     update_hour = hour + travel_in_hour
-    #     update_minute = minute + travel_in_minute
-    #     if update_minute > 59:
-    #         update_hour += int(update_minute / 60)
-    #         update_minute %= 60
-    #     new_time = time(update_hour, update_minute, 0)
-    #
-    #     return time_used, new_time.strftime('%I:%M %p')
+        # Delivery pkgs in truck2
+        Utils.update_packages_status_en_route(self.truck.truck2)
+        self.delivery_pkgs_in_truck2(start_time)
 
-    # @staticmethod
-    # def update_package9_address(pkg):
-    #     pkg.update({'address': '410 S State St'})
-    #     pkg.update({'city': 'Salt Lake City'})
-    #     pkg.update({'state': 'UT'})
-    #     pkg.update({'zip_code': '84111'})
+        # Delivery pkgs in truck3
+        Utils.update_packages_status_en_route(self.truck.truck3)
+        start_time = self.get_start_time_based_on_early_return_driver()
+        Utils.hub.update({'start_time': start_time})
+        Utils.hub.update({'travel_distance': 0})
 
-    # @staticmethod
-    # def is_address_updated(leaving_hub_time):
-    #     format_str = '%I:%M %p'
-    #     time_obj = datetime.strptime(leaving_hub_time, format_str).time()
-    #     hour = time_obj.hour
-    #     minute = time_obj.minute
-    #     # Package #9 >>> wrong address and its address will be updated at 10:20AM
-    #     if hour > 10:
-    #         return True
-    #     elif hour == 10:
-    #         if minute >= 20:
-    #             return True
-    #         else:
-    #             return False
-    #     else:
-    #         return False
-    #
-    # @staticmethod
-    # def remove_package(packages_truck3):
-    #     for pkg in packages_truck3:
-    #         if pkg.get('pid') == 9:
-    #             packages_truck3.remove(pkg)
-    #             break
-    #         return pkg
-    #
-    # #
-    # # def load_delayed_packages(truck2, truck3):
-    # #     for pkg in self.package_urgent_delayed_list:
-    # #         if len(truck2) < 16:
-    # #             truck2.append(pkg)
-    # #         else:
-    # #             truck3.append(pkg)
-    # #     for pkg in self.package_not_urgent_delayed_list:
-    # #         if len(truck2) < 16:
-    # #             truck2.append(pkg)
-    # #         else:
-    # #             truck3.append(pkg)
+        self.delivery_pkgs_in_truck3(start_time)
 
-    # truck = Truck(pkgs.package_urgent_list, pkgs.package_urgent_delayed_list,
-    #               pkgs.package_not_urgent_delayed_list, pkgs.package_with_wrong_address, pkgs.package_with_truck2_only,
-    #               pkgs.package_must_on_same_truck,
-    #               pkgs.package_remaining_packages)
-    # truck.load_cargo()
-    #
-    # # despite package id 15 requires delivery at 9:00AM, based on the current route, it will deliver on time
-    # truck1_total_time, truck1_total_mile, route1 = plan_and_deliver_packages(truck.truck1, "truck1",
-    #                                                                          '08:00 AM')  # driver1
-    # # let truck2 wait until 9:05 to leave the hub for loading the delayed packages
-    # truck.load_delayed_packages()
-    # truck2_total_time, truck2_total_mile, route2 = plan_and_deliver_packages(truck.truck2, "truck2",
-    #                                                                          '09:05 AM')  # driver2
-    # start_delivery_time = route1[-1].get('delivery_time')
-    # truck3_total_time, truck3_total_mile, route3 = plan_and_deliver_packages(truck.truck3, "truck3",
-    #                                                                          start_delivery_time)  # diver1
+    def delivery_pkgs_in_truck3(self, start_time):
+        if start_time.time() >= Utils.format_time('10:20:00'):
+            self.update_pkg9_address()
+            hub_location = copy.deepcopy(Utils.hub)
+            hub_location.update({'start_time:': start_time})
+
+            route = self.find_fast_route(hub_location, self.truck.truck3)
+            self.truck.truck3.clear()
+            self.truck.truck3.extend(route)
+
+            self.truck3_delivery(self.truck.truck3, start_time)
+        else:
+            route = self.get_route_without_pkg9(start_time)
+            # Re-organize the packages in truck
+            self.truck.truck3.clear()
+            self.truck.truck3.extend(route)
+
+            for i, pkg in enumerate(self.truck.truck3):
+                # Check is package9's address has updated
+                if start_time.time() >= Utils.format_time('10:20:00'):
+                    self.update_pkg9_address()
+                    self.add_pkg9_in_route_and_deliver(i, start_time)
+                    break
+
+                time_used, distance = Utils.update_pkg_delivery_info(pkg, start_time)
+                start_time = pkg.get('delivery_time')
+
+                # calculate total time used in minutes
+                self.truck.total_delivery_time_truck3 += time_used
+                # calculate total distance used in miles
+                self.truck.total_delivery_miles_truck3 += distance
+
+    def add_pkg9_in_route_and_deliver(self, index, st):
+        for pkg in self.pkgs.package_with_wrong_address:
+            self.truck.truck3.insert(index+1, pkg)
+        new_route = self.find_fast_route(self.truck.truck3[index], self.truck.truck3[index+1:len(self.truck.truck3)-1])
+
+        self.truck.truck3[index:len(self.truck.truck3)-1] = new_route
+
+        self.append_hub_as_final_destination(self.truck.truck3)
+
+        start_time = self.truck.truck3[index-1].get('delivery_time')
+        if start_time == '':
+            start_time = st
+        self.truck3_delivery(self.truck.truck3[index + 1:], start_time)
+
+    def truck3_delivery(self, truck, start_time):
+        self.append_hub_as_final_destination(self.truck.truck3)
+        for pkg in truck:
+            time_used, distance = Utils.update_pkg_delivery_info(pkg, start_time)
+            start_time = pkg.get('delivery_time')
+
+            # calculate total time used in minutes
+            self.truck.total_delivery_time_truck3 += time_used
+            # calculate total distance used in miles
+            self.truck.total_delivery_miles_truck3 += distance
+
+    def get_start_time_based_on_early_return_driver(self):
+        if self.truck.truck1[-1].get('delivery_time') > self.truck.truck2[-1].get('delivery_time'):
+            return self.truck.truck2[-1].get('delivery_time')
+        else:
+            return self.truck.truck1[-1].get('delivery_time')
+
+    def get_route_without_pkg9(self, start_time):
+        self.truck.truck3.remove(self.pkgs.package_with_wrong_address[0])
+        route = self.find_fast_route(Utils.hub, self.truck.truck3)
+        return route
+
+    def update_pkg9_address(self):
+        self.pkgs.package_with_wrong_address[0].update({'address': '410 S State St'})
+        self.pkgs.package_with_wrong_address[0].update({'city': 'Salt Lake City'})
+        self.pkgs.package_with_wrong_address[0].update({'state': 'UT'})
+        self.pkgs.package_with_wrong_address[0].update({'zip_code': '84111'})
+
+    def delivery_pkgs_in_truck1(self, start_time):
+        self.append_hub_as_final_destination(self.truck.truck1)
+        for pkg in self.truck.truck1:
+            time_used, distance = Utils.update_pkg_delivery_info(pkg, start_time)
+            start_time = pkg.get('delivery_time')
+
+            # calculate total time used in minutes
+            self.truck.total_delivery_time_truck1 += time_used
+            # calculate total distance used in miles
+            self.truck.total_delivery_miles_truck1 += distance
+
+    def delivery_pkgs_in_truck2(self, start_time):
+        time_object = Utils.format_time('09:05:00')
+        temp_id = -1
+        for i, pkg in enumerate(self.truck.truck2):
+            if pkg.get('pid') == 0 and i == temp_id:
+                # Load to cargo and recalculate the route based on urgent delivery and then deliver the rest of packages
+                index = self.load_urgent_delayed_packages(i)
+                self.load_delayed_not_urgent_packages(index)
+                self.recalculate_route_and_deliver(index-1, i)
+                break
+
+            time_used, distance = Utils.update_pkg_delivery_info(pkg, start_time)
+            start_time = pkg.get('delivery_time')
+
+            # calculate total time used in minutes
+            self.truck.total_delivery_time_truck2 += time_used
+            # calculate total distance used in miles
+            self.truck.total_delivery_miles_truck2 += distance
+
+            # Return to Hub to load the rest of delayed packages
+            if pkg.get('delivery_time').time() >= time_object:
+                current_address = pkg.get('address') + ' ' + pkg.get('zip_code')
+
+                # next stop would be at the Hub for picking up delayed packages
+                hub_location = copy.deepcopy(Utils.hub)
+                self.truck.truck2.insert(i + 1, hub_location)
+                temp_id = i + 1
+
+                # Update the travel info from current location back to Hub
+                self.update_inf_travel_back_to_hub(current_address, i, start_time)
+
+    @staticmethod
+    def format_time(start_time):
+        time_return_hub_for_delayed_pkgs = start_time
+        time_object = datetime.strptime(time_return_hub_for_delayed_pkgs, "%H:%M:%S").time()
+        return time_object
+
+    def update_inf_travel_back_to_hub(self, current_address, i, start_time):
+        travel_distance = float(self.drive_back_hub(current_address))
+        minutes_used_to_travel, new_time = Utils.calc_time(travel_distance, start_time)
+        self.truck.truck2[i + 1].update({'travel_distance': travel_distance})
+        self.truck.truck2[i + 1].update({'start_time': start_time})
+        self.truck.truck2[i + 1].update({'delivery_time': new_time})
+
+        # Update total delivery time and miles for truck2
+        self.truck.total_delivery_time_truck2 += minutes_used_to_travel
+        self.truck.total_delivery_miles_truck2 += travel_distance
+
+    def recalculate_route_and_deliver(self, index, i):
+        route = self.find_fast_route(self.truck.truck2[index], self.truck.truck2[index:])
+        start_time = self.truck.truck2[i].get('delivery_time')
+
+        self.truck.truck2[index + 1:] = route
+
+        # Add hub as the last location - back to Hub at the EOD
+        self.append_hub_as_final_destination(self.truck.truck2)
+
+        # Start to deliver
+        for pkg in self.truck.truck2[i:]:
+            Utils.update_pkg_delivery_info(pkg, start_time)
+            start_time = pkg.get('delivery_time')
+
+    def load_urgent_delayed_packages(self, index):
+        i = index
+        route = self.find_fast_route(Utils.hub, self.pkgs.package_urgent_delayed_list)
+
+        for count, pkg in enumerate(route):
+            if len(self.truck.truck2[index:]) < 16:
+                self.truck.truck2.insert(count + index + 1, pkg)
+                i += 1
+            else:
+                print(
+                    "You may need hire more drivers as truck1 and truck2 don't have capacity to carry delayed but urgent packages")
+        return i
+
+    def load_delayed_not_urgent_packages(self, index):
+        for pkg in self.pkgs.package_not_urgent_delayed_list:
+            if len(self.truck.truck2[index:]) < 16:
+                self.truck.truck2.append(pkg)
+            else:
+                print(
+                    "You may need hire more drivers as truck1 and truck2 don't have capacity to carry delayed but urgent packages")
+
+    def drive_back_hub(self, current_address):
+        hub_location_address = Utils.hub.get('address') + ' ' + Utils.hub.get('zip_code')
+        return self.calc_distance(current_address, hub_location_address)
+
+    @staticmethod
+    def update_pkg_delivery_info(pkg, start_time):
+        distance = float(pkg.get('travel_distance'))
+
+        time_used, new_time = Utils.calc_time(distance, start_time)
+        pkg.update({'start_time': start_time})
+        pkg.update({'delivery_time': new_time})
+        pkg.update({'status': 'delivered'})
+
+        return time_used, distance
+
+    @staticmethod
+    def calc_time(dist, start_time):
+        minutes_used_in_travel = float(
+            dist * 60 / 18)  # total time in minutes used from current location to nearst location
+        hours_to_add, remaining_minutes = divmod(minutes_used_in_travel, 60)
+        time_delta = timedelta(hours=hours_to_add, minutes=remaining_minutes)
+
+        new_time = datetime.combine(datetime.today(), start_time.time()) + time_delta
+        return minutes_used_in_travel, new_time
+
