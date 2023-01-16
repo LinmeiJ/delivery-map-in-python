@@ -4,7 +4,7 @@ my_utils = Utils()
 
 print(my_utils.route1)
 print(my_utils.route2)
-print(0)
+print(my_utils.route3)
 
 
 print('======== WGUPS Routing Program =======')
