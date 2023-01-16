@@ -39,49 +39,103 @@ class Utils:
                 pkg_info.append(vars(pkg[1]))
         return pkg_info
 
-    def pkg_loading_optimization(self):
+    # Load cargo and return a route
+    def load_more_packages(self, urgent_pkg_route, route, remaining_pkgs):
+        remaining_pkg_list = []  # Initialize a temp list in case we need find fast route independently
+        for pkg in remaining_pkgs:
+            if len(self.truck.truck1) < 16:
+                self.truck.truck1.append(pkg)
+                remaining_pkg_list.append(pkg)
+            else:
+                break
 
+        # Calculate a new route after combing all packages, set the Hub location as the beginning of the route
+        new_route = self.find_fast_route(Utils.hub, self.truck.truck1)
+
+        # Check if the fastest new route can also deliver urgent packages on time
+        if Utils.can_delivery_on_time_for_all_pkg(
+                Utils.calc_total_time_for_delivery(new_route)):
+            return new_route
+        else:
+            new_route = self.calculate_route_based_on_urgency(remaining_pkg_list, urgent_pkg_route)
+            return new_route
+
+    def calculate_route_based_on_urgency(self, remaining_pkg_list, urgent_pkg_route):
+        # Calculate the route for remaining pkgs based on the last pkg location in the urgent delivery route
+        last_urgent_pkg_location = urgent_pkg_route[-1]
+        # Check if there are addresses in remaining packages that are already contained in the urgent route
+        Utils.remove_duplicated_location(urgent_pkg_route, remaining_pkg_list)
+        # find a fast route based on the last urgent pkg location as starting point
+        remaining_route = self.find_fast_route(last_urgent_pkg_location, remaining_pkg_list)
+        remaining_route.remove(last_urgent_pkg_location)
+        # Return a new route that combines both routes
+        return urgent_pkg_route + remaining_route  # combine two routes as a final route
+
+    @staticmethod
+    def remove_duplicated_location(urgent_route, remaining_route):
+        pkg_ids = []
+
+        for rem_pkg in remaining_route:
+            rem_address = rem_pkg.get('address') + ' ' + rem_pkg.get('zip_code')
+            for i, pkg in enumerate(urgent_route):
+                address = pkg.get('address') + ' ' + pkg.get('zip_code')
+                if rem_address == address:
+                    pkg_ids.append(rem_pkg['pid'])
+                    urgent_route.insert(i + 1, rem_pkg)
+                    break
+
+        for i in range(len(remaining_route)-1, -1, -1):
+            if remaining_route[i].get('pid') in pkg_ids:
+                remaining_route.pop(i)
+
+    def pkg_loading_optimization(self):
         # Always load the urgent delivery packages first
         route_for_urgent_pkgs = self.find_fast_route(Utils.hub, self.pkgs.package_urgent_list)
 
-        # if one truck can hold all the urgent packages and can deliver one time, load to the truck1
-        if len(route_for_urgent_pkgs) < 16 and Utils.can_delivery_on_time_for_all_pkg(
+        # If one truck can carry all the urgent packages and can deliver one time, load to the truck1
+        if Utils.can_delivery_on_time_for_all_pkg(
                 Utils.calc_total_time_for_delivery(route_for_urgent_pkgs)):
-            self.set_route1(route_for_urgent_pkgs)
-            self.set_route2()
+            # Load urgent packages to truck1
+            self.truck.load_packages_to_truck1(route_for_urgent_pkgs)
+
+            # Truck's max capacity is 16
+            if len(route_for_urgent_pkgs) == 16:
+                self.route1 = route_for_urgent_pkgs
+            elif len(route_for_urgent_pkgs) < 16:
+                # Each time when call find_fast_route function, the returned the route adds hub location as the beginning of the route
+                route_for_urgent_pkgs.remove(Utils.hub)
+                self.truck.truck1.remove(Utils.hub)
+
+                # Load more packages until truck1 is full and also set the final route for truck1
+                self.route1 = self.load_more_packages(route_for_urgent_pkgs, self.route1,
+                                                      self.pkgs.package_remaining_packages)
+
+        # Split the packages into 2 trucks
         else:
+            # find out how many urgent packages can one truck carry based on the latest delivery deadline at 10:30 AM
             num_of_pkgs = Utils.deliverable_packages(route_for_urgent_pkgs, Utils.start_time)
+
+            # Split the urgent packages
             urgent_pkgs1 = route_for_urgent_pkgs[0:num_of_pkgs + 1]
             urgent_pkgs2 = route_for_urgent_pkgs[num_of_pkgs + 1:]
 
-            self.set_route1(urgent_pkgs1)
-            self.set_route2(urgent_pkgs2)
+            # load them into truck1 and truck2
 
-    def set_route2(self, pkgs=None):
-        self.truck.load_packages_to_truck2(pkgs)
-        self.truck.load_packages_to_truck2(self.pkgs.package_with_truck2_only)
-        self.truck.load_packages_to_truck2(self.pkgs.package_remaining_packages)
+            # self.set_route1(urgent_pkgs1)
+            # self.set_route2(urgent_pkgs2)
 
-        # Update package status to 'en route'
-        self.update_pkg_status(self.truck.truck2, 'en route')
-        self.route2 = self.find_fast_route(self.hub, self.truck.truck2)
-        self.route2.remove(Utils.hub)
-
-    # recalculate the route and ensure the fastest route still can meet the delivery deadline.
-    def recalculate_route_based_on_urgency(self, route_for_urgent_pkgs, temp_list):
-        route = self.find_fast_route(self.hub, self.truck.truck1)
-        route.remove(Utils.hub)
-        if Utils.can_delivery_on_time_for_all_pkg(Utils.calc_total_time_for_delivery(route)):
-            return route
-        else:  # Deliver the urgent packages first then the rest of packages
-            remaining_route = self.find_fast_route(route_for_urgent_pkgs[-1], temp_list)
-            remaining_route.remove(route_for_urgent_pkgs[-1])
-            new_route = route_for_urgent_pkgs + remaining_route
-            return new_route
+    # def set_route2(self, pkgs=None):
+    #     self.truck.load_packages_to_truck2(pkgs)
+    #     self.truck.load_packages_to_truck2(self.pkgs.package_with_truck2_only)
+    #     self.truck.load_packages_to_truck2(self.pkgs.package_remaining_packages)
+    #
+    #     # Update package status to 'en route'
+    #     self.update_pkg_status(self.truck.truck2, 'en route')
+    #     self.route2 = self.find_fast_route(self.hub, self.truck.truck2)
+    #     self.route2.remove(Utils.hub)
 
     # set route for truck1
     def set_route1(self, route_for_urgent_pkgs):
-        route_for_urgent_pkgs.remove(Utils.hub)
         self.truck.load_packages_to_truck1(route_for_urgent_pkgs)
         temp_list = []
 
@@ -293,7 +347,6 @@ class Utils:
     #     pkg.update({'city': 'Salt Lake City'})
     #     pkg.update({'state': 'UT'})
     #     pkg.update({'zip_code': '84111'})
-
 
     # @staticmethod
     # def is_address_updated(leaving_hub_time):
