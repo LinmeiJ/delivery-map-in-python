@@ -65,16 +65,16 @@ class Utils:
         # Optional.... different type of pkgs
         if pkgs1 is not None:
             for pkg in pkgs1:
-                if pkg.get('status') != 'loaded':
+                if pkg.get('status') != 'en route':
                     truck.append(pkg)
-                    pkg.update({'status': 'loaded'})
+                    pkg.update({'status': 'en route'})
                     remaining_pkg_list.append(pkg)
 
         for pkg in pkgs2:
-            if pkg.get('status') != 'loaded':
+            if pkg.get('status') != 'en route':
                 if len(truck) < 16:
                     truck.append(pkg)
-                    pkg.update({'status': 'loaded'})
+                    pkg.update({'status': 'en route'})
                     remaining_pkg_list.append(pkg)
                 else:
                     break
@@ -134,13 +134,13 @@ class Utils:
         for pkg in self.pkgs.package_urgent_list:
             for p in pkgs:
                 if pkg.get('pid') == p.get('pid'):
-                    pkg.update({'status': 'loaded'})
+                    pkg.update({'status': 'en route'})
                     break
 
         for pkg in self.pkgs.package_must_on_same_truck:
             for p in pkgs:
                 if pkg.get('pid') == p.get('pid'):
-                    pkg.update({'status': 'loaded'})
+                    pkg.update({'status': 'en route'})
                     break
 
     def pkg_loading_optimization(self):
@@ -235,18 +235,18 @@ class Utils:
         count = 0
         for pkg in self.pkgs.package_must_on_same_truck:
             urgent_pkgs1.append(pkg)
-            pkg.update({'status': 'loaded'})
+            pkg.update({'status': 'en route'})
 
         if max_hold != 0:
             for pkg in self.pkgs.package_remaining_packages:
                 if count < max_hold:
                     urgent_pkgs1.append(pkg)
-                    pkg.update({'status': 'loaded'})
+                    pkg.update({'status': 'en route'})
                 elif rest_count == 0:
                     break
 
                 urgent_pkgs2.append(pkg)
-                pkg.update({'status': 'loaded'})
+                pkg.update({'status': 'en route'})
                 count += 1
                 rest_count -= 1
         return urgent_pkgs1, urgent_pkgs2
@@ -592,4 +592,7 @@ class Utils:
 
         new_time = datetime.combine(datetime.today(), start_time.time()) + time_delta
         return minutes_used_in_travel, new_time
+
+    def display_packages_by_time(self):
+        pass
 
