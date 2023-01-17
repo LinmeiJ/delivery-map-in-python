@@ -16,22 +16,17 @@ class Truck:
         self.packages = pkgs
     
     def load_packages_to_truck1(self, pkgs):
-        if pkgs is not None and len(self.truck1) < 16:
-            for pkg in pkgs:
-                if pkg.get('status') != 'en route':
-                    self.truck1.append(pkg)
-                    pkg.update({'status': 'en route'})
+        self.load_to_truck(pkgs, self.truck1)
 
     def load_packages_to_truck2(self, pkgs):
-        if pkgs is not None:
-            for pkg in pkgs:
-                if pkg.get('status') != 'en route' and len(self.truck2) < 16:
-                    self.truck2.append(pkg)
-                    pkg.update({'status': 'en route'})
+        self.load_to_truck(pkgs, self.truck2)
 
     def load_packages_to_truck3(self, pkgs):
+        self.load_to_truck(pkgs, self.truck3)
+
+    def load_to_truck(self, pkgs, truck):
         if pkgs is not None:
             for pkg in pkgs:
-                if pkg.get('status') != 'en route' and len(self.truck3) <  16:
+                if pkg.get('status') != 'en route' and len(truck) < 16:
                     self.truck3.append(pkg)
                     pkg.update({'status': 'en route'})
