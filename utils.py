@@ -58,7 +58,7 @@ class Utils:
         return pkg_info
 
     # Load cargo and return a route
-    def load_more_packages(self, urgent_pkg_route, truck, pkgs1, pkgs2, space_size):
+    def load_more_packages(self, urgent_pkg_route, truck, pkgs1, pkgs2):
         remaining_pkg_list = []  # Initialize a temp list in case we need find fast route independently
 
         # Optional.... different type of pkgs
@@ -274,17 +274,10 @@ class Utils:
         # Load the rest of urgent delivery packages to truck2
         self.route2 = self.truck.load_packages_to_truck2(self.find_fast_route(Utils.hub, urgent_pkgs2))
         self.update_packages_status_loaded(urgent_pkgs2)
-        # if len(self.truck.truck2) < 16:
-        #     space_size_for_delayed_pkgs = len(self.pkgs.package_urgent_delayed_list) + len(
-        #         self.pkgs.package_not_urgent_delayed_list)
-        #     self.route2 = self.load_partial_truck_and_get_route(urgent_pkgs2, self.truck.truck2,
-        #                                                         self.pkgs.package_remaining_packages,
-        #                                                         self.pkgs.package_with_truck2_only,
-        #                                                         space_size_for_delayed_pkgs)
 
-    def load_partial_truck_and_get_route(self, route_for_urgent_pkgs, truck, pkgs1, pkgs2, space_size=0):
+    def load_partial_truck_and_get_route(self, route_for_urgent_pkgs, truck, pkgs1, pkgs2):
         # Load more packages until truck1 is full and also set the final route for truck1
-        return self.load_more_packages(route_for_urgent_pkgs, truck, pkgs1, pkgs2, space_size)
+        return self.load_more_packages(route_for_urgent_pkgs, truck, pkgs1, pkgs2)
 
     # This calculates how many packages a truck carries to delivery all urgent package on time based on urgent package list
     @staticmethod
@@ -411,7 +404,7 @@ class Utils:
 
             self.truck3_delivery(self.truck.truck3, start_time)
         else:
-            route = self.get_route_without_pkg9(start_time)
+            route = self.get_route_without_pkg9()
             # Re-organize the packages in truck
             self.truck.truck3.clear()
             self.truck.truck3.extend(route)
@@ -463,7 +456,7 @@ class Utils:
         else:
             return self.truck.truck1[-1].get('delivery_time')
 
-    def get_route_without_pkg9(self, start_time):
+    def get_route_without_pkg9(self):
         self.truck.truck3.remove(self.pkgs.package_with_wrong_address[0])
         route = self.find_fast_route(Utils.hub, self.truck.truck3)
         return route
@@ -606,7 +599,7 @@ class Utils:
         print(
             '===========================================================================================================================================================')
 
-    def display_package_by_pkg_id(self, id):
+    def display_package_by_pkg_id(self, pkg_id):
         pkgs = self.truck.truck1[0:-1] + self.truck.truck2[0:-1] + self.truck.truck3[0:-1]
         # delivered_pkgs = sorted(pkgs, key=lambda x: x.get('pid'))  # Just testing
         print(
@@ -616,7 +609,7 @@ class Utils:
         print('{:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format(*header))
 
         for pkg in pkgs:
-            if pkg.get('pid') == id:
+            if pkg.get('pid') == pkg_id:
                 print('{:<6s} {:<19d} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format('', pkg.get('pid'),
                                                                                               pkg.get('address'),
                                                                                               pkg.get('city'),
