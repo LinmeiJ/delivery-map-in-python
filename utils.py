@@ -375,7 +375,8 @@ class Utils:
         # Delivery pkgs in truck3
         Utils.update_packages_status_en_route(self.truck.truck3)
         start_time = self.get_start_time_based_on_early_return_driver()
-        Utils.hub.update({'start_time': start_time})
+        Utils.hub.update({'start_time': '' })
+        Utils.hub.update({'delivery_time': ''})
         Utils.hub.update({'travel_distance': 0})
 
         self.delivery_pkgs_in_truck3(start_time)
@@ -694,7 +695,10 @@ class Utils:
         for pkg in truck3:
             if pkg.get('pid') == 0:
                 continue
-            elif self.truck.truck3[0].get("start_time").time() <= Utils.format_time(end):
+            if self.truck.truck3[0].get("start_time").time() > Utils.format_time(end):
+                Utils.revert_pkg_status_at_hub(pkg)
+                all_pkgs.append(pkg)
+            elif pkg.get('delivery_time').time() <= Utils.format_time(end):
                 all_pkgs.append(pkg)
             else:
                 Utils.revert_pkg_status_en_route(pkg)
