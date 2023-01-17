@@ -552,7 +552,7 @@ class Utils:
         route = self.find_fast_route(Utils.hub, self.pkgs.package_urgent_delayed_list)
 
         for count, pkg in enumerate(route):
-            if len(self.truck.truck2[index+1:]) < 16:
+            if len(self.truck.truck2[index + 1:]) < 16:
                 self.truck.truck2.insert(count + index + 1, pkg)
                 i += 1
             else:
@@ -614,14 +614,15 @@ class Utils:
         header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
                   'Package Weight', 'Delivery Status']
         print('{:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format(*header))
+
         for pkg in pkgs:
             if pkg.get('pid') == id:
                 print('{:<6s} {:<19d} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format('', pkg.get('pid'),
-                                                                                 pkg.get('address'),
-                                                                                 pkg.get('city'),
-                                                                                 pkg.get('zip_code'),
-                                                                                 pkg.get('deadline'),
-                                                                                 pkg.get('weight'),
-                                                                                 pkg.get('status')))
+                                                                                              pkg.get('address'),
+                                                                                              pkg.get('city'),
+                                                                                              pkg.get('zip_code'),
+                                                                                              pkg.get('deadline'),
+                                                                                              pkg.get('weight'),
+                                                                                              pkg.get('status')))
         print(
             '===========================================================================================================================================================')
