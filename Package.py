@@ -73,11 +73,13 @@ class Package:
                 elif vars(pkg[1]).get('deadline') != 'EOD' and vars(pkg[1]).get(
                         'special_note') == delay_msg:
                     self.package_urgent_delayed_list.append(vars(pkg[1]))  # total of 2 out of 40
+                    vars(pkg[1]).update({'status': 'delayed'})
                 # packages that delayed but not require urgent delivery
                 elif vars(pkg[1]).get('special_note') == delay_msg and vars(pkg[1]).get(
                         'deadline') == 'EOD':
                     self.package_not_urgent_delayed_list.append(vars(pkg[1]))  # total of 2 out of 40
-                # packages that has to be with truck2
+                    vars(pkg[1]).update({'status': 'delayed'})
+            # packages that has to be with truck2
                 elif vars(pkg[1]).get('special_note') == only_truck2:  # total of 4 out of 40
                     self.package_with_truck2_only.append(vars(pkg[1]))
                 # packages with wrong address
