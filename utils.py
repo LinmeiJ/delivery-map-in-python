@@ -17,6 +17,7 @@ class Utils:
                        'placeholder-hub-location'))
 
     truck = Truck()
+    pkgs_by_id = []
 
     def __init__(self):
         # Load packages from a csv file
@@ -34,21 +35,8 @@ class Utils:
 
         self.pkg_loading_optimization()
         self.delivery_packages()
-
-        print(len(self.truck.truck1))
-        print(self.truck.truck1)
-        print(
-            f'miles in total: {self.truck.total_delivery_miles_truck1}  and time in total: {self.truck.total_delivery_time_truck1}')
-
-        print(len(self.truck.truck2))
-        print(self.truck.truck2)
-        print(
-            f'miles in total: {self.truck.total_delivery_miles_truck2}  and time in total: {self.truck.total_delivery_time_truck2}')
-
-        print(len(self.truck.truck3))
-        print(self.truck.truck3)
-        print(
-            f'miles in total: {self.truck.total_delivery_miles_truck3}  and time in total: {self.truck.total_delivery_time_truck3}')
+        pkgs = self.truck.truck1[0:-1] + self.truck.truck2[0:-1] + self.truck.truck3[0:-1]
+        self.pkgs_by_id.extend(sorted(pkgs, key=lambda x: x.get('pid')))  # sort packages by package ID
 
     def remove_keys_from_pkgs_table(self):
         pkg_info = []
@@ -479,7 +467,7 @@ class Utils:
             self.truck.total_delivery_miles_truck1 += distance
 
     def delivery_pkgs_in_truck2(self, start_time):
-        time_object = Utils.format_time('09:05:00')
+        time_object = Utils.format_time('08:55:00')
         temp_id = -1
         for i, pkg in enumerate(self.truck.truck2):
             if pkg.get('pid') == 0 and i == temp_id:
@@ -586,36 +574,128 @@ class Utils:
         new_time = datetime.combine(datetime.today(), start_time.time()) + time_delta
         return minutes_used_in_travel, new_time
 
-    def display_packages_by_time(self):
-        pass
-
     def display_all_trucks_traveled_by_time(self):
         total_miles = math.ceil(
             self.truck.total_delivery_miles_truck1 + self.truck.total_delivery_miles_truck2 + self.truck.total_delivery_miles_truck3)
         print(
             '===========================================================================================================================================================')
         print(
-            f'The total distance covered by all trucks is (including the return trips from the last package delivery to the hub for three trucks):  {total_miles} miles')
+            f'The total distance covered by all trucks is:  {total_miles} miles  (including the return trips from the last package delivery to the hub for three trucks)')
         print(
             '===========================================================================================================================================================')
 
-    def display_package_by_pkg_id(self, pkg_id):
-        pkgs = self.truck.truck1[0:-1] + self.truck.truck2[0:-1] + self.truck.truck3[0:-1]
-        # delivered_pkgs = sorted(pkgs, key=lambda x: x.get('pid'))  # Just testing
+    # Time Complexity: O(log n)
+    # Space Complexity: O(1)
+    @staticmethod
+    def binary_search(pid):
+        low = 0
+        high = len(Utils.pkgs_by_id[1:])  # Exclude the starting index which is just a place hold for the Hub location
+
+        while low <= high:
+            mid = (high + low) // 2
+            if Utils.pkgs_by_id[mid].get('pid') < pid:
+                low = mid + 1
+            elif Utils.pkgs_by_id[mid].get('pid') > pid:
+                high = mid - 1
+            else:
+                return Utils.pkgs_by_id[mid]
+        return -1
+
+    @staticmethod
+    def display_package_by_pkg_id(pid):
+        pkg = Utils.binary_search(pid)
         print(
-            '===========================================================================================================================================================')
+            '========================================================================================================================================================')
         header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
-                  'Package Weight', 'Delivery Status']
-        print('{:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format(*header))
+                  'Package Weight', 'delivery_time', 'Delivery Status']
+        print('{:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format(*header))
+        Utils.table_format(pkg)
+        print(
+            '========================================================================================================================================================')
 
-        for pkg in pkgs:
-            if pkg.get('pid') == pkg_id:
-                print('{:<6s} {:<19d} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format('', pkg.get('pid'),
+    @staticmethod
+    def table_format(pkg):
+        print('{:<1s} {:<20d} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format('', pkg.get('pid'),
                                                                                               pkg.get('address'),
                                                                                               pkg.get('city'),
                                                                                               pkg.get('zip_code'),
                                                                                               pkg.get('deadline'),
                                                                                               pkg.get('weight'),
+                                                                                              Utils.format_time_column(
+                                                                                                  pkg),
                                                                                               pkg.get('status')))
+
+    @staticmethod
+    def format_time_column(pkg):
+        if pkg.get('delivery_time') != '':
+            return str(pkg.get('delivery_time').time())
+        else:
+            return ''
+
+    @staticmethod
+    def revert_pkg_status_en_route(pkg):
+        pkg.update({'start_time': ''})
+        pkg.update({'delivery_time': ''})
+        pkg.update({'status': 'en route'})
+
+    @staticmethod
+    def revert_pkg_status_at_hub(pkg):
+        pkg.update({'start_time': ''})
+        pkg.update({'delivery_time': ''})
+        pkg.update({'status': 'at the Hub'})
+
+    def display_packages_by_time(self, end_time):
+        start_time = '08:00:00'
+        all_pkgs_time_range = []
+
+        self.packages_status_time_range(start_time, end_time, all_pkgs_time_range)
+
+        all_pkgs_time_range = sorted(all_pkgs_time_range, key=lambda x: x.get('pid'))  # sort packages by package ID
+        # all_pkgs_time_range = sorted(all_pkgs_time_range, key=lambda x: x.get('pid'))  # sort packages by package ID
+
         print(
-            '===========================================================================================================================================================')
+            '====================================================================================================================================================================================')
+        header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
+                  'Package Weight', 'delivery_time', 'Delivery Status']
+        print('{:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format(*header))
+        print(
+            '====================================================================================================================================================================================')
+
+        for pkg in all_pkgs_time_range:
+            if pkg.get('pid') == 0:
+                continue
+            Utils.table_format(pkg)
+        print(
+            '====================================================================================================================================================================================')
+
+    def packages_status_time_range(self, start, end, all_pkgs):
+        truck1 = copy.deepcopy(self.truck.truck1)
+        truck2 = copy.deepcopy(self.truck.truck2)
+        truck3 = copy.deepcopy(self.truck.truck3)
+        self.update_status_based_on_time(all_pkgs, truck1, truck2, truck3, start, end)
+
+    def update_status_based_on_time(self, all_pkgs, truck1, truck2, truck3, start, end):
+        for pkg in truck1:
+            if pkg.get('delivery_time').time() >= Utils.format_time(start) and pkg.get(
+                    'delivery_time').time() <= Utils.format_time(end):
+                all_pkgs.append(pkg)
+            else:
+                Utils.revert_pkg_status_en_route(pkg)
+                all_pkgs.append(pkg)
+
+        for pkg in truck2:
+            if pkg.get('delivery_time').time() >= Utils.format_time(start) and pkg.get(
+                    'delivery_time').time() <= Utils.format_time(end):
+                all_pkgs.append(pkg)
+            else:
+                Utils.revert_pkg_status_en_route(pkg)
+                all_pkgs.append(pkg)
+
+        for pkg in truck3:
+            if pkg.get('pid') == 0:
+                continue
+            elif self.truck.truck3[0].get("start_time").time() <= Utils.format_time(end):
+                all_pkgs.append(pkg)
+            else:
+                Utils.revert_pkg_status_en_route(pkg)
+                all_pkgs.append(pkg)
