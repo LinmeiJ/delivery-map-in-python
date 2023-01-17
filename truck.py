@@ -12,9 +12,6 @@ class Truck:
     total_delivery_time_truck3 = 0
     total_delivery_miles_truck3 = 0
 
-    total_time_all_trucks = 0
-    total_mile_all_trucks = 0
-
     def __init(self, pkgs):
         self.packages = pkgs
     
