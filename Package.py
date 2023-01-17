@@ -67,8 +67,7 @@ class Package:
                 # Urgent delivery packages that already in the Hub, but not included the ones that has to be in the
                 # same truck
                 if vars(pkg[1]).get('deadline') != 'EOD' and vars(pkg[1]).get(
-                        'special_note') == '' and must_on_same_truck_pkg.count(
-                        vars(pkg[1]).get('pid')) < 1:
+                        'special_note') == '' and must_on_same_truck_pkg.count(vars(pkg[1]).get('pid')) < 1:
                     self.package_urgent_list.append(vars(pkg[1]))  # total of 7 out of 40
                 # Urgent delivery packages that has not yet arrive
                 elif vars(pkg[1]).get('deadline') != 'EOD' and vars(pkg[1]).get(
@@ -77,7 +76,7 @@ class Package:
                 # packages that delayed but not require urgent delivery
                 elif vars(pkg[1]).get('special_note') == delay_msg and vars(pkg[1]).get(
                         'deadline') == 'EOD':
-                    self.package_not_urgent_delayed_list.append(vars(pkg[1])) # total of 2 out of 40
+                    self.package_not_urgent_delayed_list.append(vars(pkg[1]))  # total of 2 out of 40
                 # packages that has to be with truck2
                 elif vars(pkg[1]).get('special_note') == only_truck2:  # total of 4 out of 40
                     self.package_with_truck2_only.append(vars(pkg[1]))
@@ -89,4 +88,3 @@ class Package:
                     self.package_must_on_same_truck.append(vars(pkg[1]))
                 else:  # all remaining packages
                     self.package_remaining_packages.append(vars(pkg[1]))  # total of 18 of 40
-        print()
