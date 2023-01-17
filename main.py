@@ -2,12 +2,9 @@ from utils import Utils
 
 my_utils = Utils()
 
-# print(my_utils.route1)
-# print(my_utils.route2)
-# print(my_utils.route3)
-
-
 print('======== WGUPS Routing Program =======')
+
+
 ans = True
 while ans:
     print("""
@@ -21,7 +18,8 @@ while ans:
     if ans == 1:
         my_utils.display_packages_by_time(ans)
     elif ans == 2:
-        my_utils.display_package_by_pkg_id(ans)
+        id_num = int(input("Please enter a package ID number: "))
+        my_utils.display_package_by_pkg_id(id_num)
     elif ans == 3:
         my_utils.display_all_trucks_traveled_by_time()
     elif ans == 4:

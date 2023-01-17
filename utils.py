@@ -8,7 +8,6 @@ from truck import Truck
 
 
 class Utils:
-
     today = datetime.today().date()
     leaving_time = time(8, 0)
     start_time = datetime.combine(today, leaving_time)
@@ -434,14 +433,15 @@ class Utils:
 
     def add_pkg9_in_route_and_deliver(self, index, st):
         for pkg in self.pkgs.package_with_wrong_address:
-            self.truck.truck3.insert(index+1, pkg)
-        new_route = self.find_fast_route(self.truck.truck3[index], self.truck.truck3[index+1:len(self.truck.truck3)-1])
+            self.truck.truck3.insert(index + 1, pkg)
+        new_route = self.find_fast_route(self.truck.truck3[index],
+                                         self.truck.truck3[index + 1:len(self.truck.truck3) - 1])
 
-        self.truck.truck3[index:len(self.truck.truck3)-1] = new_route
+        self.truck.truck3[index:len(self.truck.truck3) - 1] = new_route
 
         self.append_hub_as_final_destination(self.truck.truck3)
 
-        start_time = self.truck.truck3[index-1].get('delivery_time')
+        start_time = self.truck.truck3[index - 1].get('delivery_time')
         if start_time == '':
             start_time = st
         self.truck3_delivery(self.truck.truck3[index + 1:], start_time)
@@ -493,7 +493,7 @@ class Utils:
                 # Load to cargo and recalculate the route based on urgent delivery and then deliver the rest of packages
                 index = self.load_urgent_delayed_packages(i)
                 self.load_delayed_not_urgent_packages(index)
-                self.recalculate_route_and_deliver(index-1, i)
+                self.recalculate_route_and_deliver(index - 1, i)
                 break
 
             time_used, distance = Utils.update_pkg_delivery_info(pkg, start_time)
@@ -504,7 +504,7 @@ class Utils:
             # calculate total distance used in miles
             self.truck.total_delivery_miles_truck2 += distance
 
-            # Return to Hub to load the rest of delayed packages
+            # Return to Hub to load the rest of delayed packages when it's close to the time flight arrives
             if pkg.get('delivery_time').time() >= time_object:
                 current_address = pkg.get('address') + ' ' + pkg.get('zip_code')
 
@@ -522,11 +522,11 @@ class Utils:
         time_object = datetime.strptime(time_return_hub_for_delayed_pkgs, "%H:%M:%S").time()
         return time_object
 
-    def update_inf_travel_back_to_hub(self, current_address, i, start_time):
+    def update_inf_travel_back_to_hub(self, current_address, i, st_time):
         travel_distance = float(self.drive_back_hub(current_address))
-        minutes_used_to_travel, new_time = Utils.calc_time(travel_distance, start_time)
+        minutes_used_to_travel, new_time = Utils.calc_time(travel_distance, st_time)
         self.truck.truck2[i + 1].update({'travel_distance': travel_distance})
-        self.truck.truck2[i + 1].update({'start_time': start_time})
+        self.truck.truck2[i + 1].update({'start_time': st_time})
         self.truck.truck2[i + 1].update({'delivery_time': new_time})
 
         # Update total delivery time and miles for truck2
@@ -537,7 +537,7 @@ class Utils:
         route = self.find_fast_route(self.truck.truck2[index], self.truck.truck2[index:])
         start_time = self.truck.truck2[i].get('delivery_time')
 
-        self.truck.truck2[index + 1:] = route
+        self.truck.truck2[index:] = route
 
         # Add hub as the last location - back to Hub at the EOD
         self.append_hub_as_final_destination(self.truck.truck2)
@@ -552,7 +552,7 @@ class Utils:
         route = self.find_fast_route(Utils.hub, self.pkgs.package_urgent_delayed_list)
 
         for count, pkg in enumerate(route):
-            if len(self.truck.truck2[index:]) < 16:
+            if len(self.truck.truck2[index+1:]) < 16:
                 self.truck.truck2.insert(count + index + 1, pkg)
                 i += 1
             else:
@@ -596,3 +596,32 @@ class Utils:
     def display_packages_by_time(self):
         pass
 
+    def display_all_trucks_traveled_by_time(self):
+        total_miles = math.ceil(
+            self.truck.total_delivery_miles_truck1 + self.truck.total_delivery_miles_truck2 + self.truck.total_delivery_miles_truck3)
+        print(
+            '===========================================================================================================================================================')
+        print(
+            f'The total distance covered by all trucks is (including the return trips from the last package delivery to the hub for three trucks):  {total_miles} miles')
+        print(
+            '===========================================================================================================================================================')
+
+    def display_package_by_pkg_id(self, id):
+        pkgs = self.truck.truck1[0:-1] + self.truck.truck2[0:-1] + self.truck.truck3[0:-1]
+        # delivered_pkgs = sorted(pkgs, key=lambda x: x.get('pid'))  # Just testing
+        print(
+            '===========================================================================================================================================================')
+        header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
+                  'Package Weight', 'Delivery Status']
+        print('{:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format(*header))
+        for pkg in pkgs:
+            if pkg.get('pid') == id:
+                print('{:<6s} {:<19d} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format('', pkg.get('pid'),
+                                                                                 pkg.get('address'),
+                                                                                 pkg.get('city'),
+                                                                                 pkg.get('zip_code'),
+                                                                                 pkg.get('deadline'),
+                                                                                 pkg.get('weight'),
+                                                                                 pkg.get('status')))
+        print(
+            '===========================================================================================================================================================')
