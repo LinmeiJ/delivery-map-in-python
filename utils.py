@@ -283,41 +283,43 @@ class Utils:
         else:
             return 0
 
-    # TSP algorithm for planning a route for a fast delivery
+    # TSP algorithm for planning a route for a fast delivery route >> self-adjusting algorithm
     def find_fast_route(self, sta_location, p):
         packages = copy.deepcopy(p)
-        # Initialize a route
+
+        # Initialize a route and nearest location
+        route = []
+        nearest_address = ''
+
         if sta_location.get('pid') == 0:
             sta_location.update({'distance': 0})
-        route = []
+
         current_location = sta_location.get('address') + ' ' + sta_location.get('zip_code')
-        nearest_address = ''
         # Keep looping until all locations have been visited
         while packages:
             # Find the nearest unvisited location to the current location
-            nearest_location = None
+            location_holder = None
             nearest_distance = float('inf')
             for pkg in packages:
-                # if pkg['status'] == 'delivered':
                 nearest_address = pkg['address'] + ' ' + pkg['zip_code']
                 location_distance = self.calc_distance(current_location, nearest_address)
                 if location_distance != '' and location_distance is not None:
                     dist = float(location_distance)
                     if dist < nearest_distance:
-                        nearest_location = pkg
+                        location_holder = pkg
                         nearest_distance = dist
-            if nearest_location is not None:
+            if location_holder is not None:
                 if self.is_same_address(nearest_address, current_location):
-                    nearest_location.update({'travel_distance': 0})
+                    location_holder.update({'travel_distance': 0})
                 else:
-                    nearest_location.update({'travel_distance': nearest_distance})
-                route.append(nearest_location)
+                    location_holder.update({'travel_distance': nearest_distance})
+                route.append(location_holder)
 
                 # Remove the nearest location from the list of unvisited locations
                 packages.remove(
-                    nearest_location)
+                    location_holder)
                 # Set the current location to the nearest location
-                current_location = nearest_location.get('address') + ' ' + nearest_location.get('zip_code')
+                current_location = location_holder.get('address') + ' ' + location_holder.get('zip_code')
         return route
 
     def calc_distance(self, start, end):
