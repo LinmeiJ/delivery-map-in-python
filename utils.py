@@ -673,8 +673,12 @@ class Utils:
         return -1
 
     @staticmethod
-    def display_package_by_pkg_id(pid):
+    def display_package_by_pkg_id(pid, time):
         pkg = Utils.binary_search(pid)
+        start_time = '08:00:00'
+        # Utils.packages_status_time_range
+
+
         print(
             '========================================================================================================================================================')
         header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',

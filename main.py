@@ -14,7 +14,7 @@ ans = True
 while ans:
     print("""
     1. View Package Status And Info By Time
-    2. Search For A Package by Package ID
+    2. Search For A Package by Package ID and Time
     3. Total Mileage Traveled By All Trucks
     4. Exit/Quit
     """)
