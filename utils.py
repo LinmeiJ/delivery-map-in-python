@@ -510,11 +510,13 @@ class Utils:
         route = self.find_fast_route(Utils.hub, self.truck.truck3)
         return route
 
-    def update_pkg9_address(self):
-        self.pkgs.package_with_wrong_address[0].update({'address': '410 S State St'})
-        self.pkgs.package_with_wrong_address[0].update({'city': 'Salt Lake City'})
-        self.pkgs.package_with_wrong_address[0].update({'state': 'UT'})
-        self.pkgs.package_with_wrong_address[0].update({'zip_code': '84111'})
+    def update_pkg9_address(self, isBefore=False, pkg=None):
+        if isBefore:
+            pkg.update({'address': '300 State St'})
+            pkg.update({'zip_code': '84103'})
+        else:
+            self.pkgs.package_with_wrong_address[0].update({'address': '410 S State St'})
+            self.pkgs.package_with_wrong_address[0].update({'zip_code': '84111'})
 
     # Time complexity: O(N) >> where n is the max size of pkgs in truck1
     # Space complexity: O(1)
@@ -673,22 +675,6 @@ class Utils:
         return -1
 
     @staticmethod
-    def display_package_by_pkg_id(pid, time):
-        pkg = Utils.binary_search(pid)
-        start_time = '08:00:00'
-        # Utils.packages_status_time_range
-
-
-        print(
-            '========================================================================================================================================================')
-        header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
-                  'Package Weight', 'delivery_time', 'Delivery Status']
-        print('{:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format(*header))
-        Utils.table_format(pkg)
-        print(
-            '========================================================================================================================================================')
-
-    @staticmethod
     def table_format(pkg):
         print('{:<1s} {:<15d} {:<25s} {:<20s} {:<25s} {:<25s} {:<15s} {:<25s} {:<25s}'.format('', pkg.get('pid'),
                                                                                               pkg.get('address'),
@@ -775,6 +761,8 @@ class Utils:
         for pkg in truck3:
             if pkg.get('pid') == 0:
                 continue
+            if pkg.get('pid') == 9 and Utils.format_time(end) < Utils.format_time('10:20:00'):
+                self.update_pkg9_address(True, pkg)
             if self.truck.truck3[0].get("start_time").time() > Utils.format_time(end):
                 Utils.revert_pkg_status_at_hub(pkg)
                 all_pkgs.append(pkg)
@@ -783,3 +771,21 @@ class Utils:
             else:
                 Utils.revert_pkg_status_en_route(pkg)
                 all_pkgs.append(pkg)
+
+    def display_packages_by_time_and_id(self, pid, end_time):
+        start_time = '08:00:00'
+        pkg_list = []
+        self.packages_status_time_range(start_time, end_time, pkg_list)
+
+        for pkg in pkg_list:
+            if pkg.get('pid') == pid:
+                print(
+                        '========================================================================================================================================================')
+                header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
+                          'Package Weight', 'delivery_time', 'Delivery Status']
+                print('{:<20s} {:<20s} {:<15s} {:<25s} {:<25s} {:<20s} {:<25s} {:<25s}'.format(*header))
+                Utils.table_format(pkg)
+                print(
+                    '========================================================================================================================================================')
+
+
