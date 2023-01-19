@@ -4,10 +4,12 @@
 
 from utils import Utils
 
+# Initialize a utils object where stores the program logics and flow
 my_utils = Utils()
 
 print('------------------------ WGUPS Routing Program ------------------------')
 
+# User Interface
 ans = True
 while ans:
     print("""
