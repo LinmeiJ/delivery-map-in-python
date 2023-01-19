@@ -24,6 +24,8 @@ class Truck:
     def load_packages_to_truck3(self, pkgs):
         Truck.load_to_truck(pkgs, self.truck3)
 
+    # Time complexity:  O(N) >> where n is the max size of the number of packages in the pkgs list
+    # Space complexity: O(N) >> a new list truck is created and adds the packages from pkgs list to it.
     @staticmethod
     def load_to_truck(pkgs, truck):
         if pkgs is not None:

@@ -10,6 +10,8 @@ class ChainingHashTable:
 
     # radix sort algorithm to store packages in hash table
     # Inserts a new pair into the hash table.
+    # Time complexity: O(n) >> the number of elements in the bucket where the key value pair is being inserted
+    # Space complexity: 0(1)
     def insert(self, key, value):
         bucket = self.find_bucket(key)
 
@@ -25,6 +27,9 @@ class ChainingHashTable:
 
     # Searches for an item with matching key in the hash table.
     # Returns the item if found, or None if not found.
+    # Time complexity: O(1) on average, O(n) as the worst case. Due to it uses hash function to find the bucket in which is a key value pair. usually the number of items in the bucket is small so fast for searching.
+    # however, if all items are stored in the same bucket, then the time complexity would be the max size of items which result the worst case scenario.
+    # Space complexity: 0(1) >> just require a constant amount of memory
     def search(self, key):
         # get the bucket number
         bucket = self.find_bucket(key)
@@ -37,6 +42,8 @@ class ChainingHashTable:
         return None  # None means not found
 
     # Removes an item with matching key from the hash table.
+    # Time complexity: O(n) >> where n is the max size of number of elements in the bucket list with a linear search approach.
+    # Space complexity: 0(1) >> just require a constant amount of memory
     def remove(self, key):
         # get the bucket where this item will be removed from.
         bucket = self.find_bucket(key)
@@ -46,12 +53,15 @@ class ChainingHashTable:
             if (kv[0]) == key:
                 bucket.remove(kv)
 
+    # Time complexity: O(n) >> where n is the max size of number of element in the bucket
+    # Space complexity: 0(1) >> just require a constant amount of memory
     def update_pkg_delivery_status(self, key, status):
         bucket = self.find_bucket(key)
         for element in bucket:
             if (element[0]) == key:
                 setattr(element[1], 'status', status)
 
+    # Time and space complexity both are O(1)
     def find_bucket(self, key):
         bucket = hash(key) % len(self.table)
         return self.table[bucket]

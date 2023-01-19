@@ -38,6 +38,8 @@ class Utils:
         pkgs = self.truck.truck1[0:-1] + self.truck.truck2[0:-1] + self.truck.truck3[0:-1]
         self.pkgs_by_id.extend(sorted(pkgs, key=lambda x: x.get('pid')))  # sort packages by package ID
 
+    # Time complexity: O(N) >> Although it is a nested for loop, but the runtime only depends on the outer loop
+    # Space complexity: O(N) >> a new list pkg_info created and the size of it proportional to the number of packages the package_table.table
     def remove_keys_from_pkgs_table(self):
         pkg_info = []
         for pkgs in self.pkgs.package_table.table:
@@ -45,6 +47,8 @@ class Utils:
                 pkg_info.append(vars(pkg[1]))
         return pkg_info
 
+    # Space complexity: O(N) >> Total number of packages (pkg1 + pkg2)
+    # Time complexity: O(N) >> N is total number of packages (pkg1 + pkg2)
     # Load cargo and return a route
     def load_more_packages(self, urgent_pkg_route, truck, pkgs1, pkgs2):
         remaining_pkg_list = []  # Initialize a temp list in case we need find fast route independently
@@ -56,7 +60,6 @@ class Utils:
                     truck.append(pkg)
                     pkg.update({'status': 'en route'})
                     remaining_pkg_list.append(pkg)
-
         for pkg in pkgs2:
             if pkg.get('status') != 'en route':
                 if len(truck) < 16:
@@ -81,6 +84,8 @@ class Utils:
             truck.extend(new_route)
             return new_route
 
+    # Space complexity: O(1) >> creates a single copy of the "Utils.hub"
+    # Time complexity: O(1)
     def append_hub_as_final_destination(self, route):
         hub_location = copy.deepcopy(Utils.hub)
         current_address = route[-1].get('address') + ' ' + route[-1].get('zip_code')
@@ -100,6 +105,8 @@ class Utils:
         # Return a new route that combines both routes
         return urgent_pkg_route + remaining_route  # combine two routes as a final route
 
+    # Runtime complexity: O(N^2) >> there is nested for loop iterating over 2 lists of packages, the urgent_route and remaining_route leads to a quadratic runtime
+    # Space complexity: O(N) >>  this function creates a list - pkg_ids with a max size of N, where N is the number of items in the remaining_route list
     @staticmethod
     def remove_duplicated_location(urgent_route, remaining_route):
         pkg_ids = []
@@ -117,6 +124,8 @@ class Utils:
             if remaining_route[i].get('pid') in pkg_ids:
                 remaining_route.pop(i)
 
+    # Time complexity: O(N^2) >> nested loop inside this function
+    # Space complexity: O(1)
     def update_packages_status_loaded(self, pkgs):
         for pkg in self.pkgs.package_urgent_list:
             for p in pkgs:
@@ -159,12 +168,12 @@ class Utils:
                 self.truck.load_packages_to_truck2(self.pkgs.package_remaining_packages)
         self.set_route2()
 
-        # Load truck3  (since there are only 40 packages, the truck3 won't exceed its capacity)
+        # Load truck3 (since there are only 40 packages, the truck3 won't exceed its capacity)
         self.truck.load_packages_to_truck3(self.pkgs.package_with_wrong_address)
         self.truck.load_packages_to_truck3(self.pkgs.package_remaining_packages)
 
         self.route3 = self.find_fast_route(Utils.hub,
-                                           self.truck.truck3)  # fix me, the leaving hub time for truck3 will be the time when truck 1 comes back
+                                           self.truck.truck3)
 
     def set_route2(self):
         route = self.find_fast_route(Utils.hub, self.truck.truck2)
@@ -177,6 +186,8 @@ class Utils:
         else:
             self.find_new_route()
 
+    # Time complexity: O(N) >> where n is the max size of packages in the truck2 (This time complexity is not include the function call to find_fast_route, with the function, it would be 0(nlogn))
+    # Space complexity: O(N) >> 2 lists are created to hold N numbers of packages.
     def find_new_route(self):
         urgent_pkgs = []
         remaining_pkgs = []
@@ -212,6 +223,8 @@ class Utils:
                                                                 None,
                                                                 self.pkgs.package_remaining_packages)
 
+    # Time complexity: O(n) >> where n is the max size of the packages that need to be split.
+    # Space complexity: O(n) >> 2 new lists are created to store a combination of N size packages from package_must_on_same_truck and package_remaining_packages
     # Make sure some packages must be on a same truck
     def split_packages(self, max_hold, max_size):
         rest_count = max_size - max_hold
@@ -238,6 +251,8 @@ class Utils:
                 rest_count -= 1
         return urgent_pkgs1, urgent_pkgs2
 
+    # Time complexity: O(n) >> where n is the number of packages in packages list. This doesn't include the complexity from the called function - fund_fast_route
+    # Space complexity: 0(n) >> 2 new list created >> urgent_pkgs1 and urgent_packages2
     def set_route_by_splitting_urgent_packages(self, route_for_urgent_pkgs):
         # find out how many urgent packages can one truck carry based on the latest delivery deadline at 10:30 AM
         num_of_pkgs = Utils.deliverable_packages_count(route_for_urgent_pkgs, Utils.start_time)
@@ -283,7 +298,10 @@ class Utils:
         else:
             return 0
 
-    # TSP algorithm for planning a route for a fast delivery route >> self-adjusting algorithm
+    # Time complexity: O(N^2) >> The while loop iterates until all packages are visited which takes O(N) time. Inside the while loop, the for loop iterates over the packages list until the nearest
+    # unvisited location is found which is another O(N) time complexity.
+    # Space complexity: O(N)  >> n number of packages in route, and also deepcopy has a space complexity of O(n)
+    # Nearest neighbor/Dijkstra's algorithm for planning a route for a fast delivery route >> self-adjusting algorithm
     def find_fast_route(self, sta_location, p):
         packages = copy.deepcopy(p)
 
@@ -322,6 +340,8 @@ class Utils:
                 current_location = location_holder.get('address') + ' ' + location_holder.get('zip_code')
         return route
 
+    # Runtime complexity: O(N) >> n is the number of key value pairs in the graph.
+    # Space complexity: O(1)
     def calc_distance(self, start, end):
         for kv in self.graph.address_with_distance.items():
             if kv[0] == start:
@@ -333,6 +353,8 @@ class Utils:
     def minute_per_mile():
         return float(60 / 18)
 
+    # Time complexity: O(N)
+    # Space complexity: O(1)
     @staticmethod
     def calc_total_time_for_delivery(packages_in_route):
         total_mile = 0
@@ -355,6 +377,8 @@ class Utils:
         else:
             return False
 
+    # Time complexity: O(N) >> where n is the number of packages
+    # Space complexity: 0(1)
     @staticmethod
     def update_packages_status_en_route(truck):
         for pkg in truck:
@@ -363,6 +387,8 @@ class Utils:
                 continue
             pkg.update({'status': 'en route'})
 
+    # Time complexity: O(N) >> the function calls three different functions, each could have a max size of n, where n is the number of items in the list
+    # Space complexity: O(1) >> no new data structures created inside this function
     def delivery_packages(self):
         start_time = Utils.start_time
 
@@ -383,6 +409,10 @@ class Utils:
 
         self.delivery_pkgs_in_truck3(start_time)
 
+    # Time complexity: O(N)
+    # Space complexity: O(N) >> due to the usage of deepcopy function that has created a new object - hub_location. Also,
+    # the function calls Utils.format_time once and Utils.update_pkg_delivery_info n times but since the function has a linear complexity,
+    # the complexity of the function is still O(N).
     def delivery_pkgs_in_truck3(self, start_time):
         if start_time.time() >= Utils.format_time('10:20:00'):
             self.update_pkg9_address()
@@ -415,6 +445,9 @@ class Utils:
                 # calculate total distance used in miles
                 self.truck.total_delivery_miles_truck3 += distance
 
+    # Time complexity: O(N)
+    # Space complexity: O(N)  >> the function uses the insert function to add packages to truck3, then uses the slice operator to extract a list from the truck3 and assign it to
+    # a new list. Then slice the truck3 again for deleting the extracted items from truck3 list.
     def add_pkg9_in_route_and_deliver(self, index, st):
         for pkg in self.pkgs.package_with_wrong_address:
             self.truck.truck3.insert(index + 1, pkg)
@@ -430,6 +463,8 @@ class Utils:
             start_time = st
         self.truck3_delivery(self.truck.truck3[index + 1:], start_time)
 
+    # Time complexity: O(N) >> where n is the number of packages in the truck
+    # Space complexity: O(1)
     def truck3_delivery(self, truck, start_time):
         self.append_hub_as_final_destination(self.truck.truck3)
         for pkg in truck:
@@ -458,6 +493,8 @@ class Utils:
         self.pkgs.package_with_wrong_address[0].update({'state': 'UT'})
         self.pkgs.package_with_wrong_address[0].update({'zip_code': '84111'})
 
+    # Time complexity: O(N) >> where n is the max size of pkgs in truck1
+    # Space complexity: O(1)
     def delivery_pkgs_in_truck1(self, start_time):
         self.append_hub_as_final_destination(self.truck.truck1)
         for pkg in self.truck.truck1:
@@ -469,6 +506,8 @@ class Utils:
             # calculate total distance used in miles
             self.truck.total_delivery_miles_truck1 += distance
 
+    # Time complexity: O(N) >> where n is the max size of the packages in the truck2
+    # Space complexity: O(N) >> due to deepcopy the Utils.hub created a new object and then uses an insert function to add the items of the new object to truck2 list
     def delivery_pkgs_in_truck2(self, start_time):
         time_object = Utils.format_time('08:55:00')
         temp_id = -1
@@ -517,6 +556,8 @@ class Utils:
         self.truck.total_delivery_time_truck2 += minutes_used_to_travel
         self.truck.total_delivery_miles_truck2 += travel_distance
 
+    # Time complexity: O(N) >> where n is the max size of packages in truck2
+    # Space complexity: O(N) >> slice operator creates a new list object with the same elements which takes up additional memory.
     def recalculate_route_and_deliver(self, index, i):
         route = self.find_fast_route(self.truck.truck2[index], self.truck.truck2[index:])
         start_time = self.truck.truck2[i].get('delivery_time')
@@ -531,6 +572,8 @@ class Utils:
             Utils.update_pkg_delivery_info(pkg, start_time)
             start_time = pkg.get('delivery_time')
 
+    # Time complexity: O(N) >> where n is the max number of packages in route
+    # Space complexity: 0(N) >> insertion function is used to add items from the route to truck2. where n is the max size of packages in route.
     def load_urgent_delayed_packages(self, index):
         i = index
         route = self.find_fast_route(Utils.hub, self.pkgs.package_urgent_delayed_list)
@@ -544,6 +587,8 @@ class Utils:
                     "You may need hire more drivers as truck1 and truck2 don't have capacity to carry delayed but urgent packages")
         return i
 
+    # Time complexity: O(N) >> where the n is the max size of packages in package_not_urgent_delayed_list
+    # Space complexity: O(N) >> due to each element in the not urgent package delayed list will be added to truck2. the size of truck2 increases based on the size of packages in the delayed list.
     def load_delayed_not_urgent_packages(self, index):
         for pkg in self.pkgs.package_not_urgent_delayed_list:
             if len(self.truck.truck2[index:]) < 16:
@@ -587,7 +632,7 @@ class Utils:
         print(
             '===========================================================================================================================================================')
 
-    # Time Complexity: O(log n)
+    # Time Complexity: O(log n) >> as the pkgs_by_id is in order with package ID, the binary search algorithm cuts the search space in half on each iteration.
     # Space Complexity: O(1)
     @staticmethod
     def binary_search(pid):
@@ -618,7 +663,7 @@ class Utils:
 
     @staticmethod
     def table_format(pkg):
-        print('{:<1s} {:<20d} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format('', pkg.get('pid'),
+        print('{:<1s} {:<15d} {:<25s} {:<20s} {:<25s} {:<25s} {:<15s} {:<25s} {:<25s}'.format('', pkg.get('pid'),
                                                                                               pkg.get('address'),
                                                                                               pkg.get('city'),
                                                                                               pkg.get('zip_code'),
@@ -647,6 +692,8 @@ class Utils:
         pkg.update({'delivery_time': ''})
         pkg.update({'status': 'at the Hub'})
 
+    # Time complexity: O(nlogn) >> The function uses sorted() function which is TimeSort, a combination of insertion sort and merge sort
+    # Space complexity: O(n) >> a list of all_pkgs_time_range is created in the function
     def display_packages_by_time(self, end_time):
         start_time = '08:00:00'
         all_pkgs_time_range = []
@@ -660,7 +707,7 @@ class Utils:
             '====================================================================================================================================================================================')
         header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
                   'Package Weight', 'delivery_time', 'Delivery Status']
-        print('{:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s} {:<25s}'.format(*header))
+        print('{:<20s} {:<20s} {:<15s} {:<25s} {:<25s} {:<20s} {:<25s} {:<25s}'.format(*header))
         print(
             '====================================================================================================================================================================================')
 
@@ -671,12 +718,16 @@ class Utils:
         print(
             '====================================================================================================================================================================================')
 
+    # Time complexity: O(n) >> where n is the total number of packages in the truck1, truck2, and truck3 with a linear search through each package in those 3 truck lists
+    # Space complexity:
     def packages_status_time_range(self, start, end, all_pkgs):
         truck1 = copy.deepcopy(self.truck.truck1)
         truck2 = copy.deepcopy(self.truck.truck2)
         truck3 = copy.deepcopy(self.truck.truck3)
         self.update_status_based_on_time(all_pkgs, truck1, truck2, truck3, start, end)
 
+    # Time complexity: O(n) >> where n is the max size of numbers of packages in trucks >> 3 iteration is actually a O(3n) but it is the same as O(n)
+    # Space complexity: 0(n) >> due to all 3 trucks will be added to the all_pkgs list in worst case scenario
     def update_status_based_on_time(self, all_pkgs, truck1, truck2, truck3, start, end):
         for pkg in truck1:
             if pkg.get('delivery_time').time() >= Utils.format_time(start) and pkg.get(

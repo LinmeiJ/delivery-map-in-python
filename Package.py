@@ -38,7 +38,9 @@ class Package:
         self.travel_distance = distance
         self.status = delivery_status
 
-    # load package data from a csv file and category them
+    # Time complexity: O(n) >> where n is the max size of number of packages in the csv file
+    # Space complexity: O(n) >> it creates n packages object and stores them in the hash table
+    # Load package data from a csv file and category them
     def load_package_data(self):
         # read data from the WGUPS Package csv file
         with open('./resource/WGUPS Package File.csv', "r") as pkgs:
@@ -54,6 +56,8 @@ class Package:
                 self.package_table.insert(pkg.pid, pkg)
         self.category_packages()
 
+    # Time complexity:  O(n) >> where n is the max size of pkg in the package table
+    # Space complexity: O(n) >> a number of new lists are created to store different category packages.
     def category_packages(self):
         delay_msg = 'Delayed on flight---will not arrive to depot until 9:05 am'
         wrong_address = 'Wrong address listed'

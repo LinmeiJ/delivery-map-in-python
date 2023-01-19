@@ -4,6 +4,8 @@ import csv
 class Graph:
     address_with_distance = {}
 
+    # Time complexity: O(RC) >> where R represents the number of rows and C represents the number of columns in the CSV file.
+    # Space complexity: O(RC) >> the address_with_distance directionary is populated with RC key-value pairs. where R is the number of rows and C is the number of columns from CSV file.
     def __init__(self):
         with open('./resource/WGUPS Distance Table.csv', 'r') as file:
             # Create a CSV reader object
@@ -31,6 +33,9 @@ class Graph:
         # Driver can drive to location B from A, also can drive from A to B. The following is to add missing
         # distance data from B to A as reading the csv file only fill up distance data from one direction
         start = '4001 South 700 East 84107'
+
+        # Time complexity: O(AD^2) >> where A represents the number of addresses and D is the number of destinations of each address
+        # Space complexity: O(1) >> just a constant amount of memory regardless of the size of the input
         for k, v in self.address_with_distance.items():
             if k == start:
                 pass
