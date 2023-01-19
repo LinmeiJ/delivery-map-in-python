@@ -27,9 +27,8 @@ class ChainingHashTable:
 
     # Searches for an item with matching key in the hash table.
     # Returns the item if found, or None if not found.
-    # Time complexity: O(1) on average, O(n) as the worst case. results 0(1) when it uses hash function to find the bucket in which is a key value pair. and usually the number of items in the bucket is small so fast for searching.
-    # however, if all items are stored in the same bucket, then the time complexity would be the max size of items which result the worst case scenario.
-    # Space complexity: 0(1) >> just require a constant amount of memory regardless of the number of key value pair in the bucket. the variable, bucket, store reference to the bucket list and a single variable 'kv' to store the current key-value pair in the for loop
+    # Time complexity: O(1) on average, O(n) as the worst case. (More explanation is in the document)
+    # Space complexity: 0(1) >> just require a constant amount of memory regardless of the number of key value pair in the bucket.
     def search(self, key):
         # get the bucket number
         bucket = self.find_bucket(key)
