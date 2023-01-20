@@ -1,5 +1,4 @@
 import copy
-import math
 from datetime import datetime, timedelta, time
 
 import graph
@@ -14,7 +13,7 @@ class Utils:
 
     hub = vars(Package(0, '4001 South 700 East',
                        'Salt Lake City', 'UT', '84107', '', '', '', start_time, '', 0,
-                       'placeholder-hub-location'))
+                       0.0))
 
     truck = Truck()
     pkgs_by_id = []
@@ -534,7 +533,7 @@ class Utils:
     # Time complexity: O(N) >> where n is the max size of the packages in the truck2
     # Space complexity: O(N) >> due to deepcopy the Utils.hub created a new object and then uses an insert function to add the items of the new object to truck2 list
     def delivery_pkgs_in_truck2(self, start_time):
-        time_object = Utils.format_time('08:55:00')
+        time_object = Utils.format_time('08:55:00')  # plan to get back to Hub around 9
         temp_id = -1
         for i, pkg in enumerate(self.truck.truck2):
             if pkg.get('pid') == 0 and i == temp_id:
@@ -550,7 +549,7 @@ class Utils:
             # calculate total time used in minutes
             self.truck.total_delivery_time_truck2 += time_used
             # calculate total distance used in miles
-            self.truck.total_delivery_miles_truck2 += distance
+            self.truck.total_delivery_miles_truck2 = round(self.truck.total_delivery_miles_truck2, 2) + round(distance, 2)
 
             # Return to Hub to load the rest of delayed packages when it's close to the time flight arrives
             if pkg.get('delivery_time').time() >= time_object:
@@ -579,7 +578,7 @@ class Utils:
 
         # Update total delivery time and miles for truck2
         self.truck.total_delivery_time_truck2 += minutes_used_to_travel
-        self.truck.total_delivery_miles_truck2 += travel_distance
+        self.truck.total_delivery_miles_truck2 += float(travel_distance)
 
     # Time complexity: O(N^2) >> the function call to find_fast_route takes overall time complexity
     # Space complexity: O(N) >> slice operator creates a new list object with the same elements which takes up additional memory.
@@ -596,6 +595,7 @@ class Utils:
         for pkg in self.truck.truck2[i:]:
             Utils.update_pkg_delivery_info(pkg, start_time)
             start_time = pkg.get('delivery_time')
+            self.truck.total_delivery_miles_truck2 += float(pkg.get('travel_distance'))
 
     # Time complexity: O(N^2) >> the function call to find_fast_route takes overall time complexity
     # Space complexity: 0(N) >> insertion function is used to add items from the route to truck2. where n is the max size of packages in route.
@@ -647,15 +647,39 @@ class Utils:
         new_time = datetime.combine(datetime.today(), start_time.time()) + time_delta
         return minutes_used_in_travel, new_time
 
-    def display_all_trucks_traveled_by_time(self):
-        total_miles = math.ceil(
-            self.truck.total_delivery_miles_truck1 + self.truck.total_delivery_miles_truck2 + self.truck.total_delivery_miles_truck3)
+    def display_all_trucks_traveled_miles(self):
+        total1 = Utils.display_package_delivery_by_truck(0.0, self.truck.truck1, 'Truck 1')
+        total2 = Utils.display_package_delivery_by_truck(0.0, self.truck.truck2, 'Truck 2')
+        total3 = Utils.display_package_delivery_by_truck(0.0, self.truck.truck3, 'Truck 3')
+
+        print(f'Truck 1 total: {total1} miles')
+        print(f'Truck 2 total: {total2} miles')
+        print(f'Truck 3 total: {total3} miles')
         print(
-            '===========================================================================================================================================================')
+            f'The total distance covered by all trucks is:  {round(total1+total2+total3,1)} miles ')
+        print('======================================================================')
+
+    @staticmethod
+    def display_package_delivery_by_truck(total, truck, truck_num):
         print(
-            f'The total distance covered by all trucks is:  {total_miles} miles  (including the return trips from the last package delivery to the hub for three trucks)')
-        print(
-            '===========================================================================================================================================================')
+            f'===================================================================================== {truck_num} ===================================================================================')
+        header = ['Package ID', 'Delivery Address', 'Delivery Deadline', 'delivery_time', 'Delivery Status',
+                  'total miles started from Hub']
+        print('{:<15s} {:<50s} {:<30s} {:<25s} {:<25s} {:<20s}'.format(*header))
+        for i, pkg in enumerate(truck):
+            if truck_num == 'Truck 2':
+                if pkg.get('pid') == 0:
+                    if pkg.get('delivery_time').time() < truck[-2].get('delivery_time').time():
+                        pkg.update({'status': 'Pick up delayed pkgs'})
+                    else:
+                        pkg.update({'status': 'Returned Hub'})
+            elif pkg.get('pid') == 0:
+                pkg.update({'status': 'Returned Hub'})
+
+            total += float(pkg.get('travel_distance'))
+            pkg.update({'total_mile': total})
+            Utils.mileage_table_format(pkg)
+        return total
 
     # Time Complexity: O(log n) >> as the pkgs_by_id is in order with package ID, the binary search algorithm cuts the search space in half on each iteration.
     # Space Complexity: O(1)
@@ -676,15 +700,28 @@ class Utils:
 
     @staticmethod
     def table_format(pkg):
-        print('{:<1s} {:<15d} {:<25s} {:<20s} {:<25s} {:<25s} {:<15s} {:<25s} {:<25s}'.format('', pkg.get('pid'),
-                                                                                              pkg.get('address'),
-                                                                                              pkg.get('city'),
-                                                                                              pkg.get('zip_code'),
-                                                                                              pkg.get('deadline'),
-                                                                                              pkg.get('weight'),
-                                                                                              Utils.format_time_column(
-                                                                                                  pkg),
-                                                                                              pkg.get('status')))
+        print(
+            '{:<1s} {:<13d} {:<25s} {:<25s} {:<25s} {:<23s} {:<20s} {:<20s} {:<20}'.format('', pkg.get('pid'),
+                                                                                           pkg.get('address'),
+                                                                                           pkg.get('city'),
+                                                                                           pkg.get('zip_code'),
+                                                                                           pkg.get('deadline'),
+                                                                                           pkg.get('weight'),
+                                                                                           Utils.format_time_column(
+                                                                                               pkg),
+                                                                                           pkg.get('status')))
+
+    @staticmethod
+    def mileage_table_format(pkg):
+        print(
+            '{:<1s} {:<13d} {:<55s} {:<28s} {:<25s} {:<35s} {:<50}'.format('', pkg.get('pid'),
+                                                                           pkg.get('address') + ' ' + pkg.get(
+                                                                               'city') + ' ' + pkg.get('zip_code'),
+                                                                           pkg.get('deadline'),
+                                                                           Utils.format_time_column(
+                                                                               pkg),
+                                                                           pkg.get('status'),
+                                                                           round(float(pkg.get('total_mile')), 1)))
 
     @staticmethod
     def format_time_column(pkg):
@@ -709,20 +746,21 @@ class Utils:
     # Space complexity: O(n) >> a list of all_pkgs_time_range is created in the function
     def display_packages_by_time(self, end_time):
         start_time = '08:00:00'
+        end_time += ':00'
         all_pkgs_time_range = []
 
         self.packages_status_time_range(start_time, end_time, all_pkgs_time_range)
 
-        all_pkgs_time_range = sorted(all_pkgs_time_range, key=lambda x: x.get('pid'))  # sort packages by package ID
+        all_pkgs_time_range = sorted(all_pkgs_time_range, key=lambda x: x.get('status'))  # sort packages by package ID
         # all_pkgs_time_range = sorted(all_pkgs_time_range, key=lambda x: x.get('pid'))  # sort packages by package ID
 
         print(
-            '====================================================================================================================================================================================')
-        header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
+            '==============================================================================================================================================================================================')
+        header = ['Package ID', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
                   'Package Weight', 'delivery_time', 'Delivery Status']
-        print('{:<20s} {:<20s} {:<15s} {:<25s} {:<25s} {:<20s} {:<25s} {:<25s}'.format(*header))
+        print('{:<15s} {:<25s} {:<20s} {:<25s} {:<25s} {:<20s} {:<20s} {:<20s}'.format(*header))
         print(
-            '====================================================================================================================================================================================')
+            '==============================================================================================================================================================================================')
 
         for pkg in all_pkgs_time_range:
             if pkg.get('pid') == 0:
@@ -742,22 +780,29 @@ class Utils:
     # Time complexity: O(n) >> where n is the max size of numbers of packages in trucks >> 3 iteration is actually a O(3n) but it is the same as O(n)
     # Space complexity: 0(n) >> due to all 3 trucks will be added to the all_pkgs list in worst case scenario
     def update_status_based_on_time(self, all_pkgs, truck1, truck2, truck3, start, end):
+        total1 = 0.0
         for pkg in truck1:
             if pkg.get('delivery_time').time() >= Utils.format_time(start) and pkg.get(
                     'delivery_time').time() <= Utils.format_time(end):
+                total1 += float(pkg.get('travel_distance'))
+                pkg.update({'total_mile': total1})
                 all_pkgs.append(pkg)
             else:
                 Utils.revert_pkg_status_en_route(pkg)
                 all_pkgs.append(pkg)
 
+        total2 = 0.0
         for pkg in truck2:
             if pkg.get('delivery_time').time() >= Utils.format_time(start) and pkg.get(
                     'delivery_time').time() <= Utils.format_time(end):
                 all_pkgs.append(pkg)
+                total2 += float(pkg.get('travel_distance'))
+                pkg.update({'total_mile': total2})
             else:
                 Utils.revert_pkg_status_en_route(pkg)
                 all_pkgs.append(pkg)
 
+        total3 = 0.0
         for pkg in truck3:
             if pkg.get('pid') == 0:
                 continue
@@ -767,6 +812,8 @@ class Utils:
                 Utils.revert_pkg_status_at_hub(pkg)
                 all_pkgs.append(pkg)
             elif pkg.get('delivery_time').time() <= Utils.format_time(end):
+                total3 += float(pkg.get('travel_distance'))
+                pkg.update({'total_mile': total3})
                 all_pkgs.append(pkg)
             else:
                 Utils.revert_pkg_status_en_route(pkg)
@@ -774,18 +821,18 @@ class Utils:
 
     def display_packages_by_time_and_id(self, pid, end_time):
         start_time = '08:00:00'
+        end_time += ':00'
         pkg_list = []
         self.packages_status_time_range(start_time, end_time, pkg_list)
 
         for pkg in pkg_list:
             if pkg.get('pid') == pid:
                 print(
-                        '========================================================================================================================================================')
-                header = ['Package ID Number', 'Delivery Address', 'Delivery City', 'Delivery Zip Code', 'Delivery Deadline',
+                    '============================================================================================================================================================')
+                header = ['Package ID', 'Delivery Address', 'Delivery City', 'Delivery Zip Code',
+                          'Delivery Deadline',
                           'Package Weight', 'delivery_time', 'Delivery Status']
-                print('{:<20s} {:<20s} {:<15s} {:<25s} {:<25s} {:<20s} {:<25s} {:<25s}'.format(*header))
+                print('{:<15s} {:<25s} {:<20s} {:<25s} {:<25s} {:<20s} {:<20s} {:<20s}'.format(*header))
                 Utils.table_format(pkg)
                 print(
-                    '========================================================================================================================================================')
-
-
+                    '==============================================================================================================================================================')

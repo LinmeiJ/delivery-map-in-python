@@ -4,13 +4,13 @@ class Truck:
     truck3 = []
 
     total_delivery_time_truck1 = 0
-    total_delivery_miles_truck1 = 0
+    total_delivery_miles_truck1 = 0.0
 
     total_delivery_time_truck2 = 0
-    total_delivery_miles_truck2 = 0
+    total_delivery_miles_truck2 = 0.0
 
     total_delivery_time_truck3 = 0
-    total_delivery_miles_truck3 = 0
+    total_delivery_miles_truck3 = 0.0
 
     def __init(self, pkgs):
         self.packages = pkgs

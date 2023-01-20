@@ -24,7 +24,7 @@ class Package:
     package_remaining_packages = []
 
     def __init__(self, pkg_id, address, city, state, zip_code, deadline, weight, special_note, s_time='',
-                 d_time="", distance=0, delivery_status='At The Hub'):
+                 d_time="", distance=0, mile=0, delivery_status='At The Hub', truck=None):
         self.pid = int(pkg_id)
         self.address = address
         self.city = city
@@ -36,7 +36,9 @@ class Package:
         self.start_time = s_time
         self.delivery_time = d_time
         self.travel_distance = distance
+        self.total_mile = mile
         self.status = delivery_status
+        self.truck = truck
 
     # Time complexity: O(n) >> where n is the max size of number of packages in the csv file
     # Space complexity: O(n) >> it creates n packages object and stores them in the hash table
