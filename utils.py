@@ -757,7 +757,7 @@ class Utils:
 
         self.packages_status_time_range(start_time, end_time, all_pkgs_time_range)
 
-        all_pkgs_time_range = sorted(all_pkgs_time_range, key=lambda x: x.get('status'))  # sort packages by package ID
+        all_pkgs_time_range = sorted(all_pkgs_time_range, key=lambda x: x.get('pid'))  # sort packages by package ID
         # all_pkgs_time_range = sorted(all_pkgs_time_range, key=lambda x: x.get('pid'))  # sort packages by package ID
 
         print(
