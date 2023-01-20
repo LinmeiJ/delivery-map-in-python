@@ -742,6 +742,12 @@ class Utils:
         pkg.update({'delivery_time': ''})
         pkg.update({'status': 'at the Hub'})
 
+    @staticmethod
+    def revert_pkg_status_delayed(pkg):
+        pkg.update({'start_time': ''})
+        pkg.update({'delivery_time': ''})
+        pkg.update({'status': 'delayed'})
+
     # Time complexity: O(nlogn) >> The function uses sorted() function which is TimeSort, a combination of insertion sort and merge sort
     # Space complexity: O(n) >> a list of all_pkgs_time_range is created in the function
     def display_packages_by_time(self, end_time):
@@ -798,6 +804,9 @@ class Utils:
                 all_pkgs.append(pkg)
                 total2 += float(pkg.get('travel_distance'))
                 pkg.update({'total_mile': total2})
+            elif Utils.format_time(end) < Utils.format_time('09:05:00') and (pkg.get("pid") == 25 or pkg.get("pid") == 28 or pkg.get("pid") == 32 or pkg.get("pid") == 6):
+                Utils.revert_pkg_status_delayed(pkg)
+                all_pkgs.append(pkg)
             else:
                 Utils.revert_pkg_status_en_route(pkg)
                 all_pkgs.append(pkg)
