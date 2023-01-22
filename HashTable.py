@@ -1,4 +1,6 @@
 # The reference for the following implementation is from 'Hash Table class using Chaining' in ZyBook Chapter 9
+# The class if used for store packages with using package unique ID as element key and package
+# special detail in the form of list as the value of key
 class ChainingHashTable:
     # Constructor with optional initial capacity parameter.
     # Assigns all buckets with an empty list.

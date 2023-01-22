@@ -1,6 +1,7 @@
 import csv
 
 
+# This class reads graphical data from a CSV file and store it as a list of dictionary.
 class Graph:
     address_with_distance = {}
 
